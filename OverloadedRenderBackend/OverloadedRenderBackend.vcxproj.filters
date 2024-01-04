@@ -1,0 +1,147 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Renderers">
+      <UniqueIdentifier>{4d385f9f-fbd3-42e1-a1e8-a6b7193e184f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders">
+      <UniqueIdentifier>{2c99a9c0-0d6d-480a-a5f0-70500f2f9648}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utility">
+      <UniqueIdentifier>{650ba8cd-e0b0-40c5-a408-62ef4bb045d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Distrib">
+      <UniqueIdentifier>{d113a87a-9edb-45ca-a11e-f8358cf60d35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Texutres">
+      <UniqueIdentifier>{a659294b-7269-4ee7-87b0-e905c672c780}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Meshes">
+      <UniqueIdentifier>{ec988d07-583d-48cd-a66f-bae78fd23920}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Meshes\Mesh types">
+      <UniqueIdentifier>{085323c3-1b43-4a68-8623-7e73e908fd4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Meshes\Library">
+      <UniqueIdentifier>{7cd35e96-7cce-4b3c-b036-591a34379237}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utility\Werml">
+      <UniqueIdentifier>{9b8fe9a5-0685-4f37-bdab-6432a1583f0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Meshes\Mesh types\Textured">
+      <UniqueIdentifier>{a5834078-17d6-41af-ac94-a94ae9d9cf48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Text">
+      <UniqueIdentifier>{9d69a815-56e7-439d-970e-83730e540976}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderBackend.h">
+      <Filter>Source Files\Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPass.h">
+      <Filter>Source Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderLog.hpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderStage.h">
+      <Filter>Source Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Source Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="OverloadedRenderBackend.h">
+      <Filter>Source Files\Distrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Stream.h">
+      <Filter>Source Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Textures.h">
+      <Filter>Source Files\Texutres</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh Library.h">
+      <Filter>Source Files\Meshes\Library</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Source Files\Meshes\Mesh types</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Source Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Wermal Reader.h">
+      <Filter>Source Files\Utility\Werml</Filter>
+    </ClInclude>
+    <ClInclude Include="TexturedMesh.h">
+      <Filter>Source Files\Meshes\Mesh types\Textured</Filter>
+    </ClInclude>
+    <ClInclude Include="Fonts.h">
+      <Filter>Source Files\Text</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="RenderBackend.cpp">
+      <Filter>Source Files\Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderLog.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderStage.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="OverloadedRenderBackend.cpp">
+      <Filter>Source Files\Distrib</Filter>
+    </ClCompile>
+    <ClCompile Include="Stream.cpp">
+      <Filter>Source Files\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GLAD\glad.c">
+      <Filter>Source Files\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Textures.cpp">
+      <Filter>Source Files\Texutres</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh Library.cpp">
+      <Filter>Source Files\Meshes\Library</Filter>
+    </ClCompile>
+    <ClCompile Include="TexturedMesh.cpp">
+      <Filter>Source Files\Meshes\Mesh types\Textured</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files\Meshes\Mesh types\Textured</Filter>
+    </ClCompile>
+    <ClCompile Include="Wermal Reader.cpp">
+      <Filter>Source Files\Utility\Werml</Filter>
+    </ClCompile>
+    <ClCompile Include="Fonts.cpp">
+      <Filter>Source Files\Text</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
