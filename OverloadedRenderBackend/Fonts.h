@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-typedef struct FontInfo
+typedef struct ORB_FontInfo
 {
     TTF_Font* font;
     const char* name;
@@ -33,7 +33,7 @@ public:
      * @param c the filename
      * @return the font that was loaded
      */
-    FontInfo* LoadFont(const char* c);
+    ORB_FontInfo* LoadFont(const char* c);
     /**
      * @brief Load a a font with custom size.
      *
@@ -41,14 +41,14 @@ public:
      * @param fontsize size to load the font as
      * @return the font
      */
-    FontInfo* LoadFont(const char* c, int fontsize);
+    ORB_FontInfo* LoadFont(const char* c, int fontsize);
     /**
      * @brief Get a font from the array.
      *
      * @param name the filename
      * @return the found font, nullptr if font wasn't found
      */
-    FontInfo* FetchFont(const char* name);
+    ORB_FontInfo* FetchFont(const char* name);
     /**
      * @brief Delete all fonts from memory.
      *
@@ -58,14 +58,14 @@ public:
      * @brief Delete a font.
      * @param font - the FontInfo* to delete
      */
-    void DeleteFont(FontInfo* f);
+    void DeleteFont(ORB_FontInfo* f);
     /**
      * @brief Measures text.
      *
      * @param text the text to measure
      * @return the scale of the text needed
      */
-    glm::vec2 MeasureText(FontInfo* f, const char* text);
+    glm::vec2 MeasureText(ORB_FontInfo* f, const char* text);
     
     static Fonts* Instance();
 private:
@@ -73,6 +73,6 @@ private:
      * @brief Ctor.
      */
     Fonts();
-    std::vector<FontInfo*> _fonts;
+    std::vector<ORB_FontInfo*> _fonts;
     static inline Fonts* _instance;
 };

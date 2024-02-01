@@ -1,0 +1,13 @@
+<ShaderStage>
+  <Compute>
+    ./Managed/Shaders/glowCompute.comp
+    <uniform>
+      tex[unique]
+      fboCorner[8]
+      zoom[4]
+    </uniform>
+    <Buffers>
+      sources[9]
+    </Buffers>
+  </Compute>
+</ShaderStage>

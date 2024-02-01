@@ -1,0 +1,15 @@
+<ShaderStage>
+  <Compute>
+    ./Managed/Shaders/lighting.comp
+    <uniform>
+      tex[unique]
+      fboCorner[8]
+      zoom[4]
+      wallCount[41]
+    </uniform>
+    <Buffers>
+      sources[9]
+      walls[9]
+    </Buffers>
+  </Compute>
+</ShaderStage>

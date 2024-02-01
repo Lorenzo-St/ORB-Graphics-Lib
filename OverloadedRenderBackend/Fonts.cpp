@@ -16,17 +16,17 @@ inline Fonts::~Fonts()
     SDL_Quit();
 }
 
-FontInfo* Fonts::LoadFont(const char* c)
+ORB_FontInfo* Fonts::LoadFont(const char* c)
 {
     return LoadFont(c, 24);
 }
 
-FontInfo* Fonts::LoadFont(const char* c, int size)
+ORB_FontInfo* Fonts::LoadFont(const char* c, int size)
 {
 
     if (_instance == nullptr)
         _instance = new Fonts();
-    FontInfo* f = new FontInfo();
+    ORB_FontInfo* f = new ORB_FontInfo();
     f->font = TTF_OpenFont(c, size);
     if (f->font == nullptr)
         throw std::runtime_error("Failed to create font");
@@ -35,7 +35,7 @@ FontInfo* Fonts::LoadFont(const char* c, int size)
     return _instance->_fonts[_instance->_fonts.size() - 1];
 }
 
-FontInfo* Fonts::FetchFont(const char* name)
+ORB_FontInfo* Fonts::FetchFont(const char* name)
 {
     if (_instance == nullptr)
     {
@@ -67,7 +67,7 @@ void Fonts::DeleteFonts()
     _instance->_fonts.clear();
 }
 
-void Fonts::DeleteFont(FontInfo* f)
+void Fonts::DeleteFont(ORB_FontInfo* f)
 {
   TTF_CloseFont(f->font);
   f->font = nullptr;
@@ -86,7 +86,7 @@ Fonts::Fonts()
     TTF_Init();
 }
 
-glm::vec2 Fonts::MeasureText(FontInfo* f, const char* text)
+glm::vec2 Fonts::MeasureText(ORB_FontInfo* f, const char* text)
 {
     if (f == nullptr)
         return {0, 0};

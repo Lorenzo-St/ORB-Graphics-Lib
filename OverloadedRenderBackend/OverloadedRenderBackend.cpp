@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#define ORB_EXPOSE_GLM
 #include "OverloadedRenderBackend.h"
 #include "RenderBackend.h"
 #include "Textures.h"
@@ -19,7 +21,7 @@ enum class Errors : int
 Renderer* active = nullptr;
 Errors errorState = Errors::NoError;
 
-Mesh* _activeMesh = nullptr;
+ORB_Mesh* _activeMesh = nullptr;
 
 std::vector<Window*> activeWindows;
 Window* defaultWindow = nullptr;
@@ -28,10 +30,11 @@ KeyCallback keyFunction;
 std::unordered_map<char, KEY_STATE> keys;
 
 MouseButtonCallback mbuttonFunction;
-std::unordered_map<int, KEY_STATE> mouseButtons;
+std::unordered_map<MOUSEBUTTON, KEY_STATE> mouseButtons;
 
 MouseMovmentCallback mMovementFunction;
 
+WindowCallback windowFunction;
 
 GenericCallback genericFunction;
 
@@ -40,6 +43,10 @@ void LogError(const char* s)
   std::cerr << "ORB ERROR: " << s << std::endl;
 }
 
+glm::vec3 Convert(Vector3D v)
+{
+  return glm::vec3(v.x, v.y, v.z);
+}
 
 glm::vec4 Convert(Vector4D v)
 {
@@ -94,6 +101,11 @@ namespace orb
     }
   }
 
+  bool IsFKey(SDL_KeyboardEvent* k)
+  {
+    return k->keysym.scancode > 57 && k->keysym.scancode < 70;
+  }
+
 
   ORB_SPEC void ORB_API Update()
   {
@@ -106,23 +118,60 @@ namespace orb
       switch (ev.type)
       {
       case SDL_WINDOWEVENT:
+      {
+        auto w = SDL_GetWindowFromID(ev.window.windowID);
+        auto fin = [w](Window* wi) {return wi->window == w; };
+        auto winPointer = std::find_if(activeWindows.begin(), activeWindows.end(), fin);
 
         switch (ev.window.event)
         {
         case SDL_WINDOWEVENT_CLOSE:
         {
-          auto w = SDL_GetWindowFromID(ev.window.windowID);
-          auto fin = [w](Window* wi) {return wi->window == w; };
-          auto toClose = std::find_if(activeWindows.begin(), activeWindows.end(), fin);
-          if (toClose != activeWindows.end())
+
+          if (winPointer != activeWindows.end())
           {
-            active->DestroyWindow(*toClose);
+            active->DestroyWindow(*winPointer);
           }
 
         }
         break;
+        case SDL_WINDOWEVENT_RESIZED:
+        case SDL_WINDOWEVENT_MAXIMIZED:
+        case SDL_WINDOWEVENT_MINIMIZED:
+          int x, y, wi, he;
+          glm::vec2 oldSize = { (*winPointer)->w, (*winPointer)->h };
+          bool foc = SDL_GetWindowGrab(w);
+          SDL_GetWindowPosition(w, &x, &y);
+          SDL_GetWindowSize(w, &wi, &he);
+          (*winPointer)->w = wi;
+          (*winPointer)->h = he;
+          (*winPointer)->x = x;
+          (*winPointer)->y = y;
+          glm::vec2 newSize = { (*winPointer)->w,(*winPointer)->h };
+          glm::vec2 ratio = ((newSize.y != 0) ? newSize
+            : ((*winPointer)->w = static_cast<int>(oldSize.x),
+              (*winPointer)->h = static_cast<int>(oldSize.y),
+              oldSize)) /
+            oldSize;
+          active->_zoom *= ratio.y;
+          (*winPointer)->vw = wi;
+          (*winPointer)->vh = he;
+          (*winPointer)->vx = x;
+          (*winPointer)->vy = y;
+
+          if (windowFunction != nullptr)
+          {
+
+            windowFunction(*winPointer, x, y, wi, he, foc);
+          }
+          active->GetCamera().setZoom(active->_zoom);
+
+
+          active->ResizeFBOs();
+          break;
         }
-        break;
+      }
+      break;
       case SDL_APP_TERMINATING:
         /* FALL THROUGH */
       case SDL_QUIT:
@@ -138,28 +187,28 @@ namespace orb
         //std::cout << ev.key.keysym.sym << " " << +ev.key.state << std::endl;
         if (ev.key.state > 1)
           ev.key.state = 1;
+        if (IsFKey(reinterpret_cast<SDL_KeyboardEvent*>(&ev)))
+          ev.key.keysym.sym += 100;
         CallKeyCallBack(ev.key.keysym.sym, static_cast<KEY_STATE>(ev.key.state));
         break;
       case SDL_MOUSEBUTTONDOWN:
       case SDL_MOUSEBUTTONUP:
         if (mbuttonFunction != nullptr)
         {
-          auto b = ev.button.button;
+          MOUSEBUTTON b = static_cast<MOUSEBUTTON>(ev.button.button);
           KEY_STATE newstate = static_cast<KEY_STATE>(ev.button.state);
-          if (keyFunction != nullptr)
-          {
-            KEY_STATE& state = mouseButtons[b];
-            if (newstate == KEY_STATE::RELEASED)
-              state = KEY_STATE::RELEASED;
-            else if (newstate == state)
-            {
-              state = KEY_STATE::HELD;
-            }
-            else if (newstate > state)
-              state = newstate;
 
-            mbuttonFunction(b, state);
+          KEY_STATE& state = mouseButtons[b];
+          if (newstate == KEY_STATE::RELEASED)
+            state = KEY_STATE::RELEASED;
+          else if (newstate == state)
+          {
+            state = KEY_STATE::HELD;
           }
+          else if (newstate > state)
+            state = newstate;
+
+          mbuttonFunction(b, state);
         }
         break;
       case SDL_MOUSEMOTION:
@@ -229,6 +278,11 @@ namespace orb
     mMovementFunction = callback;
   }
 
+  ORB_SPEC void ORB_API RegisterWindowCallback(WindowCallback callback)
+  {
+    windowFunction = callback;
+  }
+
   ORB_SPEC void ORB_API RegisterMessageCallback(GenericCallback callback)
   {
     genericFunction = callback;
@@ -247,6 +301,7 @@ namespace orb
       }
       activeWindows.clear();
       delete active;
+      active = nullptr;
     }
     catch (...)
     {
@@ -258,22 +313,45 @@ namespace orb
   {
     return static_cast<int>(errorState);
   }
-  ORB_SPEC void ORB_API DrawRect(float x, float y, float width, float height)
+  ORB_SPEC void ORB_API DrawRect(float x, float y, float width, float height, int layer)
   {
-    active->DrawRect({ x,y }, { width, height }, 0);
+    active->DrawRect({ x,y }, { width, height }, 0, layer);
+    SetUV(glm::identity<glm::mat4>());
   }
-  ORB_SPEC void ORB_API DrawRect(Vector2D pos, Vector2D scale)
+  ORB_SPEC void ORB_API DrawRect(Vector2D pos, Vector2D scale, int layer)
   {
-    active->DrawRect({ pos.x, pos.y }, { scale.x, scale.y }, 0);
-
+    active->DrawRect({ pos.x, pos.y }, { scale.x, scale.y }, 0, layer);
+    SetUV(glm::identity<glm::mat4>());
   }
-  ORB_SPEC void ORB_API DrawRectAdvanced(float x, float y, float width, float height, float rotation)
+  ORB_SPEC void ORB_API SetWindowPosition(Window* w, int x, int y)
   {
-    active->DrawRect({ x,y }, { width, height }, rotation);
+    active->SetWindowPosition(w, x, y);
   }
-  ORB_SPEC void ORB_API DrawRectAdvanced(Vector2D pos, Vector2D scale, float rotation)
+  ORB_SPEC void ORB_API DrawRectAdvanced(float x, float y, float width, float height, float rotation, int layer)
   {
-    active->DrawRect({ pos.x,pos.y }, { scale.x, scale.y }, rotation);
+    active->DrawRect({ x,y }, { width, height }, rotation, layer);
+    SetUV(glm::identity<glm::mat4>());
+  }
+  ORB_SPEC void ORB_API DrawRectAdvanced(Vector2D pos, Vector2D scale, float rotation, int layer)
+  {
+    active->DrawRect({ pos.x,pos.y }, { scale.x, scale.y }, rotation, layer);
+    SetUV(glm::identity<glm::mat4>());
+  }
+  ORB_SPEC void ORB_API SetWindowScale(Window* w, int wi, int h)
+  {
+    active->SetWindowScale(w, wi, h);
+  }
+  ORB_SPEC void ORB_API SetWindowViewport(Window* w, int vx, int vy, int vw, int vh)
+  {
+    active->SetWindowViewPort(w, vx, vy, vw, vh);
+  }
+  ORB_SPEC void ORB_API SetWindowMax(Window* w)
+  {
+    active->SetWindowMaximized(w);
+  }
+  ORB_SPEC void ORB_API SetWindowFullScreen(Window* w, int type)
+  {
+    active->SetWindowFullScreen(w, type);
 
   }
   ORB_SPEC void ORB_API SetDrawColor(uchar r, uchar g, uchar b, uchar a)
@@ -282,7 +360,8 @@ namespace orb
   }
   ORB_SPEC bool ORB_API IsRunning()
   {
-    return active->running;
+
+    return active != nullptr ? active->running : false;
   }
   ORB_SPEC Vector2D ORB_API ToScreenSpace(Vector2D v)
   {
@@ -296,17 +375,94 @@ namespace orb
   {
     active->SetProjectionMode(static_cast<int>(p));
   }
-  ORB_SPEC texture ORB_API LoadTexture(std::string path)
+  ORB_SPEC void ORB_API SetDefaultRenderMode(int i)
+  {
+    active->SetDefualtRenderMode(i);
+  }
+  ORB_SPEC void ORB_API DrawLine(Vector2D start, Vector2D end, int depth)
+  {
+    DrawLine(Vector3D(start), Vector3D(end), depth);
+  }
+  ORB_SPEC void ORB_API DrawLine(Vector3D start, Vector3D end, int depth)
+  {
+    int oldActive = _activePolyMode - GL_POINT;
+    std::vector<Vertex> points = {
+      { glm::vec4(static_cast<glm::vec3>(start), 1), {1,1,1,1}, {0,0} },
+      { glm::vec4(static_cast<glm::vec3>(end), 1), {1,1,1,1}, {0,0} }
+    };
+    active->SetMatrix(glm::identity<glm::mat4>());
+    active->SetFillMode(1);
+    active->DrawMesh(points, depth, GL_LINES);
+    active->SetFillMode(oldActive);
+  }
+  ORB_SPEC void ORB_API SetFillMode(int i)
+  {
+    active->SetFillMode(i);
+  }
+  ORB_SPEC std::vector<ORB_texture> const& ORB_API GetAllLoadedTextures()
+  {
+    return TextureManager::Instance()->GetTextures();
+  }
+  ORB_SPEC void ORB_API SetZoom(float z)
+  {
+    active->SetZoom(z);
+  }
+  ORB_SPEC Vector2D ORB_API GetWindowSize(Window* w)
+  {
+    return Convert(active->GetWindowSize(w));
+  }
+  ORB_SPEC Vector2D ORB_API GetCameraPosition()
+  {
+    return Convert(active->GetCamera().Position());
+  }
+  ORB_SPEC void ORB_API SetCameraPosition(Vector2D pos)
+  {
+    active->GetCamera().moveCamera(Convert(pos));
+  }
+  ORB_SPEC void ORB_API SetCameraRotation(Vector3D rot)
+  {
+    active->GetCamera().rotateCamera(Convert(rot));
+  }
+  ORB_SPEC float ORB_API GetZoom()
+  {
+    return active->GetCamera().GetZoom();
+  }
+  ORB_SPEC ORB_texture ORB_API LoadTexture(std::string path)
   {
     return TextureManager::Instance()->LoadTexture(path);
   }
-  ORB_SPEC texture ORB_API LoadTexture(const char* path)
+  ORB_SPEC ORB_texture ORB_API LoadTexture(const char* path)
   {
     return TextureManager::Instance()->LoadTexture(path);
   }
-  ORB_SPEC void ORB_API SetActiveTexture(texture t)
+  ORB_SPEC void ORB_API SetActiveTexture(ORB_texture t)
   {
     active->SetActiveTexture(t);
+  }
+  ORB_SPEC void ORB_API DeleteTexture(ORB_texture t)
+  {
+    TextureManager::Instance()->DropTexture(t);
+  }
+  ORB_SPEC Vector2D ORB_API GetTextureDimension(ORB_texture t)
+  {
+    return { (float)t->Width(), (float)t->Height() };
+  }
+  ORB_SPEC void ORB_API SetUV(glm::mat4 const& uv)
+  {
+
+    active->WriteUniform("texMulti", (void*)&uv);
+  }
+  ORB_SPEC void ORB_API SetUV(Vector2D const& uv, Vector2D const& scale)
+  {
+    glm::mat4 _frameMatrix = glm::mat4x4(1.0f);
+    _frameMatrix = glm::translate(
+      _frameMatrix, glm::vec3(uv.x, uv.y, 0.0f));
+    _frameMatrix = glm::scale(_frameMatrix, glm::vec3(scale.x, scale.y, 0));
+    SetUV(_frameMatrix);
+  }
+  ORB_SPEC void ORB_API SetUV(float u, float v, float w, float h)
+  {
+    SetUV({ u,v }, { w,h });
   }
   ORB_SPEC void ORB_API BeginMesh()
   {
@@ -364,7 +520,7 @@ namespace orb
   {
     _activeMesh->Color() = { color.r, color.g, color.b, color.a };
   }
-  ORB_SPEC void ORB_API TexMeshSetTexture(texture t)
+  ORB_SPEC void ORB_API TexMeshSetTexture(ORB_texture t)
   {
     if (dynamic_cast<TexturedMesh*>(_activeMesh) != nullptr)
     {
@@ -385,33 +541,33 @@ namespace orb
       dynamic_cast<TexturedMesh*>(_activeMesh)->LoadTexture(s);
     }
   }
-  ORB_SPEC mesh ORB_API EndMesh()
+  ORB_SPEC ORB_mesh ORB_API EndMesh()
   {
-    mesh m = _activeMesh;
+    ORB_mesh m = _activeMesh;
     _activeMesh = nullptr;
     return m;
   }
-  ORB_SPEC mesh ORB_API LoadMesh(const char* path)
+  ORB_SPEC ORB_mesh ORB_API LoadMesh(const char* path)
   {
     return MeshLibrary::Instance()->CreateMesh(path);
   }
-  ORB_SPEC mesh ORB_API LoadMesh(std::string path)
+  ORB_SPEC ORB_mesh ORB_API LoadMesh(std::string path)
   {
     return MeshLibrary::Instance()->CreateMesh(path);
 
   }
 
-  ORB_SPEC mesh ORB_API LoadTexMesh(const char* c)
+  ORB_SPEC ORB_mesh ORB_API LoadTexMesh(const char* c)
   {
     return MeshLibrary::Instance()->CreateTexMesh(c);
   }
 
-  ORB_SPEC mesh ORB_API LoadTexMesh(std::string s)
+  ORB_SPEC ORB_mesh ORB_API LoadTexMesh(std::string s)
   {
     return MeshLibrary::Instance()->CreateTexMesh(s);
   }
 
-  ORB_SPEC void ORB_API DrawMesh(const mesh m, Vector3D const& pos, Vector3D const& scale, Vector3D const& rot)
+  ORB_SPEC void ORB_API DrawMesh(const ORB_mesh m, Vector3D const& pos, Vector3D const& scale, Vector3D const& rot, int layer)
   {
     if (!m)
     {
@@ -421,12 +577,20 @@ namespace orb
     m->Execute();
     active->SetMatrix({ pos.x, pos.y, pos.z }, { scale.x, scale.y, scale.z }, { rot.x, rot.y, rot.z });
     active->SetColor(m->Color());
-    active->DrawMesh(m->Verticies(), 1, m->DrawMode());
+    active->DrawMesh(m->Verticies(), layer, m->DrawMode());
+    SetUV(glm::identity<glm::mat4>());
   }
 
-  ORB_SPEC font ORB_API LoadFont(const char* path)
+  ORB_SPEC void ORB_API DrawMesh(ORB_mesh m, glm::mat4 matrix, int layer)
   {
-    font f = Fonts::Instance()->LoadFont(path);
+    active->SetMatrix(matrix);
+    active->DrawMesh(m->Verticies(), layer, m->DrawMode());
+    SetUV(glm::identity<glm::mat4>());
+  }
+
+  ORB_SPEC ORB_font ORB_API LoadFont(const char* path)
+  {
+    ORB_font f = Fonts::Instance()->LoadFont(path);
     if (f == nullptr)
     {
       errorState = Errors::FontLoadFailure;
@@ -435,36 +599,41 @@ namespace orb
     return f;
   }
 
-  ORB_SPEC void ORB_API DestroyFont(font fon)
+  ORB_SPEC void ORB_API DestroyFont(ORB_font fon)
   {
-    Fonts::Instance()->DeleteFont(const_cast<FontInfo*>(fon));
+    Fonts::Instance()->DeleteFont(const_cast<ORB_FontInfo*>(fon));
   }
 
-  ORB_SPEC void ORB_API SetActiveFont(font f)
+  ORB_SPEC void ORB_API SetActiveFont(ORB_font f)
   {
     active->SetActiveFont(f);
   }
 
-  ORB_SPEC texture ORB_API RenderTextToTexture(const char* text, int size, Vector4D const& color)
+  ORB_SPEC ORB_texture ORB_API RenderTextToTexture(const char* text, int size, Vector4D const& color)
   {
     return active->RenderText(text, Convert(color), size);
   }
 
-  ORB_SPEC void ORB_API WriteText(const char* text, Vector2D const& pos, int size, Vector4D const& color)
+  ORB_SPEC void ORB_API WriteText(const char* text, Vector2D const& pos, int size, Vector4D const& color, int layer)
   {
-    Texture* tex = active->RenderText(text, Convert(color), size);
-    auto siz = Fonts::Instance()->MeasureText(const_cast<FontInfo*>(active->ActiveFont()), text);
+    ORB_Texture* tex = active->RenderText(text, Convert(color), size);
+    auto siz = Fonts::Instance()->MeasureText(const_cast<ORB_FontInfo*>(active->ActiveFont()), text);
     active->SetActiveTexture(tex);
-    active->DrawRect(Convert(pos), siz, 0);
+    active->DrawRect(Convert(pos), siz, 0, layer);
     active->SetActiveTexture(nullptr);
-
+    SetUV(glm::identity<glm::mat4>());
   }
 
-  ORB_SPEC void ORB_API LoadCustomRenderPass(std::string path)
+  ORB_SPEC void ORB_API LoadCustomRenderPass(std::string const& path)
   {
     if (path.find(".rpass.meta") == std::string::npos)
       return;
-    active->LoadRenderPass(path);
+    active->LoadRenderPass(path.c_str());
+  }
+
+  ORB_SPEC void ORB_API LoadCustomRenderPass(const char* path)
+  {
+    LoadCustomRenderPass(std::string(path));
   }
 
   ORB_SPEC void ORB_API WriteBuffer(std::string buffer, size_t dataSize, void* data)
@@ -486,12 +655,18 @@ namespace orb
 Vector2D::Vector2D(float _x, float _y) : x(_x), y(_y) {}
 Vector2D::Vector2D(Vector3D const& a) : x(a.x), y(a.y) {}
 Vector2D::Vector2D(Vector4D const& a) : x(a.r), y(a.g) {}
+Vector2D::Vector2D(glm::vec2 const& v) : x(v.x), y(v.y) {}
+Vector2D::operator glm::vec2() { return glm::vec2(x, y); }
 
 Vector3D::Vector3D(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 Vector3D::Vector3D(float _x, float _y) : x(_x), y(_y), z(0) {};
 Vector3D::Vector3D(Vector2D const& a) : x(a.x), y(a.y), z(0) {}
 Vector3D::Vector3D(Vector4D const& a) : x(a.r), y(a.g), z(a.b) {}
+Vector3D::Vector3D(glm::vec3 const& v) : x(v.x), y(v.y), z(v.z) {}
+Vector3D::operator glm::vec3() { return glm::vec3(x, y, z); }
 
 Vector4D::Vector4D(float _r, float _g, float _b, float _a) : r(_r), g(_g), b(_b), a(_a) {}
 Vector4D::Vector4D(Vector2D const& a) : r(a.x), g(a.y), b(1), a(1) {}
 Vector4D::Vector4D(Vector3D const& a) : r(a.x), g(a.y), b(a.z), a(1) {}
+Vector4D::Vector4D(glm::vec4 const& v) : r(v.r), g(v.g), b(v.b), a(v.a) {}
+Vector4D::operator glm::vec4() { return glm::vec4(r, g, b, a); }

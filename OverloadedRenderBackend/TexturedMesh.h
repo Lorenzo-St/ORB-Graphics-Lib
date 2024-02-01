@@ -1,7 +1,7 @@
 #pragma once
 #include "Mesh.h"
 #include "Textures.h"
-struct TexturedMesh : Mesh 
+struct TexturedMesh : ORB_Mesh 
 {
 public:
   ~TexturedMesh();
@@ -9,7 +9,7 @@ public:
   void LoadTexture(const char* path);
   void LoadTexture(std::string path);
   
-  void SetTexture(Texture* t);
+  void SetTexture(ORB_Texture* t);
 
   void Read(std::string) override;
   void Read(Stream& s) override;
@@ -17,5 +17,5 @@ public:
   void Execute() const override;
 
 private:
-  Texture* t;
+  ORB_Texture* t;
 };

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-struct Mesh;
+struct ORB_Mesh;
 
 class MeshLibrary 
 {
@@ -10,15 +10,15 @@ public:
   ~MeshLibrary();
   static MeshLibrary* Instance();
   
-  Mesh* CreateMesh();
-  Mesh* CreateMesh(std::string);
-  Mesh* CreateMesh(const char*);
+  ORB_Mesh* CreateMesh();
+  ORB_Mesh* CreateMesh(std::string);
+  ORB_Mesh* CreateMesh(const char*);
 
-  Mesh* CreateTexMesh();
-  Mesh* CreateTexMesh(std::string);
-  Mesh* CreateTexMesh(const char*);
+  ORB_Mesh* CreateTexMesh();
+  ORB_Mesh* CreateTexMesh(std::string);
+  ORB_Mesh* CreateTexMesh(const char*);
   
-  void DropMesh(Mesh*);
+  void DropMesh(ORB_Mesh*);
 
 private:
   MeshLibrary() = default;
@@ -29,5 +29,5 @@ private:
 
 
   static inline MeshLibrary* _instance = nullptr;
-  std::vector<Mesh*> _meshes;
+  std::vector<ORB_Mesh*> _meshes;
 };

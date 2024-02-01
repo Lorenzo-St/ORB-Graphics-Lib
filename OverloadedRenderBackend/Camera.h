@@ -14,7 +14,7 @@ typedef struct Camera
 {
 private:
   bool dirty = true;
-  float rotation = 0;
+  glm::vec3 rotation = { 0,0,0 };
   float zoom = 1;
   glm::vec3 position = { 0, 0, 0 };
   glm::mat4x4 matrix;
@@ -28,10 +28,11 @@ public:
   {
     if (dirty)
     {
-      glm::mat4x4 scaled =
-        glm::scale(glm::identity<glm::mat4x4>(), glm::vec3(zoom, zoom, zoom));
-      glm::mat4x4 rot = glm::rotate(scaled, glm::radians(rotation), { 0, 0, 1 });
-      matrix = glm::translate(rot, position);
+      matrix = glm::translate(glm::identity<glm::mat4>(), position);
+      matrix = glm::rotate(matrix, glm::radians(rotation.x), { 0, 0, 1 });
+      matrix = glm::rotate(matrix, glm::radians(rotation.y), { 1, 0, 0 });
+      matrix = glm::rotate(matrix, glm::radians(rotation.z), { 0, 1, 0 });
+      matrix = glm::scale(matrix, glm::vec3(zoom, zoom, zoom));
       dirty = false;
     }
     return matrix;
@@ -51,9 +52,13 @@ public:
     zoom = f;
     dirty = true;
   };
-  void rotateCamera(float newRot)
+  void rotateCamera(glm::vec3 newRot)
   {
     rotation = newRot;
     dirty = true;
+  }
+  float GetZoom()
+  {
+    return zoom;
   }
 } Camera;

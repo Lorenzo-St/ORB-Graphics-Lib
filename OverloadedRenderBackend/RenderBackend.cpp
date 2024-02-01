@@ -10,6 +10,8 @@
 #include "RenderPass.h"
 #include "Textures.h"
 #include "Vertex.h"
+#define GLM_ENABLE_EXPERIMENTAL 
+#include <gtx/string_cast.hpp>
 #define LOG_WINDOW_SWAPS 0
  // Used for sending ponter to value containing true or false
 const int zero = 0;
@@ -43,9 +45,17 @@ void CheckError(int l)
 #endif
 }
 
-
+void RefreshWindow(Window* w) 
+{
+  SDL_Event e;
+  e.type = SDL_WINDOWEVENT;
+  e.window.windowID = SDL_GetWindowID(w->window);
+  e.window.event = SDL_WINDOWEVENT_RESIZED;
+  SDL_PushEvent(&e);
+}
 Renderer::Renderer()
   : _window(nullptr)
+  , _activeFont(nullptr)
 {
   SDL_Init(SDL_INIT_VIDEO);
 
@@ -88,8 +98,8 @@ Renderer::Renderer()
   glClear(GL_COLOR_BUFFER_BIT);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
-  glEnable(GL_DEBUG_OUTPUT);
-  glDebugMessageCallback(MessageCallback, 0);
+  //glEnable(GL_DEBUG_OUTPUT);
+  //glDebugMessageCallback(MessageCallback, 0);
 
   _activePass = new RenderPass();
   _window->primary = true;
@@ -178,25 +188,45 @@ void Renderer::SetActiveWindow(Window* w)
       else
       {
         running = false;
-        delete this;
       }
     }
     return;
   }
   _window = w;
-  auto fenceId = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-  GLenum result;
-  while (true)
-  {
-    result = glClientWaitSync(fenceId, GL_SYNC_FLUSH_COMMANDS_BIT, GLuint64(5000000000)); //5 Second timeout
-    if (result != GL_TIMEOUT_EXPIRED) break; //we ignore timeouts and wait until all OpenGL commands are processed!
-  }
+  //auto fenceId = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+  //GLenum result;
+  //while (true)
+  //{
+  //  result = glClientWaitSync(fenceId, GL_SYNC_FLUSH_COMMANDS_BIT, GLuint64(5000000000)); //5 Second timeout
+  //  if (result != GL_TIMEOUT_EXPIRED) break; //we ignore timeouts and wait until all OpenGL commands are processed!
+  //}
   if (SDL_GL_MakeCurrent(_window->window, _window->context) != 0)
     throw "Bad";
   assert(_window->window == SDL_GL_GetCurrentWindow() && "Window swap successful");
   UpdateRenderConstants();
 }
-// TODO: Figure out correcting secondary window rendering
+void Renderer::SetWindowMaximized(Window* w)
+{
+  SDL_MaximizeWindow(w->window);
+  RefreshWindow(w);
+}
+void Renderer::SetWindowFullScreen(Window* w, int type)
+{
+  switch (type)
+  {
+  case 0:
+    SDL_SetWindowFullscreen(w->window, 0);
+
+    break;
+  case 1:
+    SDL_SetWindowFullscreen(w->window, SDL_WINDOW_FULLSCREEN);
+    break;
+  case 2:
+    SDL_SetWindowFullscreen(w->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    break;
+  }
+  RefreshWindow(w);
+}
 void Renderer::DestroyWindow(Window* w)
 {
   //if (w == defaultWindow)
@@ -206,6 +236,29 @@ void Renderer::DestroyWindow(Window* w)
   activeWindows.erase(res);
   w->window = nullptr;
   w->context = nullptr;
+}
+
+void Renderer::SetWindowViewPort(Window* wi, int x, int y, int w, int h)
+{
+  if (w == 0 || h == 0)
+    return;
+  wi->vx = x, wi->vy = y, wi->vw = w, wi->vh = h;
+}
+
+void Renderer::SetWindowScale(Window* wi, int w, int h)
+{
+  if (w == 0 || h == 0)
+    return;
+  SDL_SetWindowSize(wi->window, w, h);
+  RefreshWindow(wi);
+
+}
+
+void Renderer::SetWindowPosition(Window* w, int x, int y)
+{
+  SDL_SetWindowPosition(w->window, x, y);
+  RefreshWindow(w);
+
 }
 
 void Renderer::LoadRenderPass(std::string path)
@@ -242,7 +295,7 @@ void Renderer::WriteUniform(std::string uniform, void* data)
 
 glm::vec2 Renderer::ToWorldSpace(glm::vec2 src)
 {
-  return src * glm::vec2(1, -1) + glm::vec2(-(_window->w / 2.0f), (_window->h / 2.0f));
+  return src * glm::vec2(1/_zoom, -1 / _zoom) + glm::vec2(-(_window->w / (2.0f * _zoom)), (_window->h / (2.0f * _zoom)));
 }
 
 void Renderer::DispatchCompute(int x, int y, int z)
@@ -252,7 +305,7 @@ void Renderer::DispatchCompute(int x, int y, int z)
 
 glm::vec2 Renderer::ToScreenSpace(glm::vec2 src)
 {
-  return (src + glm::vec2((_window->w / 2.0f), -(_window->h / 2.0f))) * glm::vec2(1, -1);
+  return (src * glm::vec2(_zoom, -_zoom)  + glm::vec2((_window->w / (2.0f / _zoom)), -(_window->h / (2.0f / _zoom)))) ;
 }
 
 void Renderer::RegisterCallBack(int stage, int id, renderCallBack fn)
@@ -264,15 +317,28 @@ void Renderer::RegisterCallBack(int stage, int id, renderCallBack fn)
 void Renderer::DrawRect(glm::vec2 pos, glm::vec2 scale, float rot, uint depth)
 {
   if (_window->primary == true)
+  {
     _activePass->BindActiveFBO(depth);
+
+    if (depth == 2)
+    {
+      _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
+    }
+  }
   else
   {
     _activePass->BindActiveFBO(-1);
+
+
   }
   if (_window->VAO == "")
   {
     _window->VAO = std::move(_activePass->MakeVAO(_window->name + "VAO"));
   }
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    return;
+
+
   _activePass->BindBuffer(_window->VAO);
   _activePass->BindBuffer("VBO");
   SetMatrix(glm::vec3(pos, 0), glm::vec3(scale, 1), rot);
@@ -282,15 +348,23 @@ void Renderer::DrawRect(glm::vec2 pos, glm::vec2 scale, float rot, uint depth)
     {{ .5f,  .5f, 0, 1}, {1, 1, 1, 1}, {1,0}},
     {{ .5f, -.5f, 0, 1}, {1, 1, 1, 1}, {1,1}} };
   _activePass->WriteBuffer("VBO", 4 * sizeof(Vertex), (void*)mesh);
-  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  glDrawArrays(renderMode, 0, 4);
   _activePass->UnBindBuffer("VBO");
   _activePass->UnBindBuffer(_window->VAO);
+  if (depth == 2)
+    _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
 }
 
 void Renderer::DrawMesh(std::vector<Vertex> const& v, uint depth, int poly)
 {
   if (_window->primary == true)
+  {
     _activePass->BindActiveFBO(depth);
+    if (depth == 2)
+    {
+      _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
+    }
+  }
   else
   {
     _activePass->BindActiveFBO(-1);
@@ -300,16 +374,19 @@ void Renderer::DrawMesh(std::vector<Vertex> const& v, uint depth, int poly)
   {
     _window->VAO = std::move(_activePass->MakeVAO(_window->name + "VAO"));
   }
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    return;
   _activePass->BindBuffer(_window->VAO);
   _activePass->BindBuffer("VBO");
   _activePass->WriteBuffer("VBO", v.size() * sizeof(Vertex), (void*)v.data());
   glDrawArrays(poly, 0, static_cast<int>(v.size()));
   _activePass->UnBindBuffer("VBO");
   _activePass->UnBindBuffer(_window->VAO);
-  CheckError(__LINE__);
+  if (depth == 2)
+    _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
 }
 
-void Renderer::SetColor(glm::vec4 color)
+void Renderer::SetColor(glm::vec4 const& color)
 {
   if (_activePass->QuerryAttribute("globalColor") == false)
   {
@@ -317,20 +394,20 @@ void Renderer::SetColor(glm::vec4 color)
     throw std::invalid_argument(
       "ORB ERROR: Drawabled render stage must contain 4 component vector bound to name: globalColor");
   };
-  _activePass->WriteAttribute("globalColor", &color);
+  _activePass->WriteAttribute("globalColor", (void*)&color);
 }
 
-void Renderer::SetMatrix(glm::vec3 pos, glm::vec3 scale)
+void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale)
 {
   SetMatrix(pos, scale, glm::vec3(0));
 }
 
-void Renderer::SetMatrix(glm::vec3 pos, glm::vec3 scale, float rot)
+void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale, float rot)
 {
   SetMatrix(pos, scale, glm::vec3(rot, 0, 0));
 }
 
-void Renderer::SetMatrix(glm::vec3 pos, glm::vec3 scale, glm::vec3 rot)
+void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale, glm::vec3 const& rot)
 {
   constexpr glm::vec3 posChange = glm::vec3(1, 1, 1);
   glm::mat4 temp = glm::identity<glm::mat4>();
@@ -349,10 +426,21 @@ void Renderer::SetMatrix(glm::vec3 pos, glm::vec3 scale, glm::vec3 rot)
   _activePass->WriteAttribute("objectMatrix", &temp);
 }
 
-glm::vec2 Renderer::GetWindowSize()
+glm::vec2 Renderer::GetWindowSize(Window* w)
 {
   int x, y;
-  return  SDL_GetWindowSize(_window->window, &x, &y), _window->w = x, _window->h = y, glm::vec2(x, y);
+  return  SDL_GetWindowSize(w->window, &x, &y), _window->w = x, _window->h = y, glm::vec2(x, y);
+}
+
+void Renderer::SetMatrix(glm::mat4 const& matrix)
+{
+  if (_activePass->QuerryAttribute("objectMatrix") == false)
+  {
+    std::cerr << "ORB ERROR: Drawabled render stage must contain 4x4 matrix bound to name: objectMatrix" << std::endl;
+    throw std::invalid_argument(
+      "ORB ERROR : Drawabled render stage must contain 4x4 matrix bound to name: objectMatrix");
+  };
+  _activePass->WriteAttribute("objectMatrix", (void*)&matrix);
 }
 
 void Renderer::Update()
@@ -399,7 +487,8 @@ void Renderer::SetProjectionMode(int i)
   _projection = i;
 }
 
-void Renderer::SetActiveTexture(Texture* t)
+
+void Renderer::SetActiveTexture(ORB_Texture* t)
 {
   if (_activePass->QuerryAttribute("textured") == false)
   {
@@ -427,6 +516,21 @@ void Renderer::SetActiveTexture(Texture* t)
   _activePass->WriteAttribute("textured", (void*)&one);
 }
 
+
+bool Renderer::QueryAndSet(std::string name)
+{
+  if (_activePass->QuerryStage(name))
+  {
+    _activePass->SetSpecificStage(name);
+    return true;
+  }
+  return false;
+}
+void Renderer::ResizeFBOs()
+{
+  _activePass->ResizeFBOs();
+}
+
 void Renderer::UpdateRenderConstants()
 {
 
@@ -435,53 +539,96 @@ void Renderer::UpdateRenderConstants()
     ortho,
     perspective,
   };
-  _windowSize = GetWindowSize();
-  if (_activePass->QuerryStage("default"))
+  _windowSize = GetWindowSize(_window);
+  if (QueryAndSet("default") == false &&
+    QueryAndSet("primary") == false)
   {
-    _activePass->SetSpecificStage("default");
-
-    glm::mat4 _projectionMatrix;
-    glm::mat4x4 camMat = mainCamera.GetMatrix();
-    switch (_projection)
-    {
-    case ortho:
-      _projectionMatrix = glm::ortho(
-        -_windowSize.x / 2.0f,
-        _windowSize.x / 2.0f,
-        -_windowSize.y / 2.0f,
-        _windowSize.y / 2.0f,
-        0.f,
-        1000.f) * camMat;
-      break;
-    case perspective:
-      glm::vec3 camPos = camMat * glm::vec4(0, 0, 0, 1);
-      glm::vec3 lookatPos = camMat * glm::vec4(0, 0, 2, 1);
-      _projectionMatrix = glm::perspective(120.0f, _windowSize.x / _windowSize.y, 1.0f, 1500.0f) * glm::lookAt(camPos, lookatPos, glm::vec3(0, 1, 0)) * camMat;
-      break;
-    }
-    _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
-
+    std::cerr << "ORB ERROR: Main rendering stage must be named either 'default' or 'primary'" << std::endl;
+    throw std::invalid_argument("ORB ERROR: Main rendering stage must be names either 'default' or 'primary'");
   }
 
+  if (_activePass->QuerryAttribute("screenMatrix") == false)
+  {
+    std::cerr << "ORB ERROR: Main rendering stage must have mat4 named 'screenMatrix'. This matrix will be used for camera and projection" << std::endl;
+    throw std::invalid_argument("ORB ERROR : Main rendering stage must have mat4 names 'screenMatrix'.This matrix will be used for camera and projection");
+  }
+
+
+  glm::mat4 camMat = mainCamera.GetMatrix();
+  switch (_projection)
+  {
+  case ortho:
+    _projectionMatrix = glm::ortho(
+      -_windowSize.x / 2.0f,
+      _windowSize.x / 2.0f,
+      -_windowSize.y / 2.0f,
+      _windowSize.y / 2.0f,
+      0.f,
+      1000.f);
+    _storedProjection = _projectionMatrix * camMat;
+    break;
+  case perspective:
+    glm::vec3 camPos = camMat * glm::vec4(0, 0, 0, 1);
+    glm::vec3 lookatPos = camMat * glm::vec4(0, 0, 2, 1);
+    _projectionMatrix = glm::perspective(120.0f, _windowSize.x / _windowSize.y, 1.0f, 1500.0f) * glm::lookAt(camPos, lookatPos, glm::vec3(0, 1, 0));
+    _storedProjection = _projectionMatrix * camMat;
+    break;
+  }
+  _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
+
+  if (_activePass->QuerryAttribute("texMulti"))
+  {
+    const glm::mat4 iden = glm::identity<glm::mat4>();
+    _activePass->WriteAttribute("texMulti", (void*)&iden[0][0]);
+
+  }
+  glViewport(0,0, _window->vw,  _window->vh);
+
+
+
 }
 
-void Renderer::SetActiveFont(FontInfo const* f)
+void Renderer::SetActiveFont(ORB_FontInfo const* f)
 {
-  _activeFont = const_cast<FontInfo*>(f);
+  _activeFont = const_cast<ORB_FontInfo*>(f);
 }
 
 
-FontInfo const* Renderer::ActiveFont()
+ORB_FontInfo const* Renderer::ActiveFont()
 {
   return _activeFont;
 }
 
+void Renderer::SetZoom(float f)
+{
+  _zoom = f;
+  mainCamera.setZoom(f);
+}
 
-Texture* Renderer::RenderText(const char* text, glm::vec4 const& color, int size)
+Camera& Renderer::GetCamera()
+{
+  return mainCamera;
+}
+
+void Renderer::SetDefualtRenderMode(int i)
+{
+  renderMode = i;
+}
+
+unsigned int _activePolyMode = GL_FILL;
+void Renderer::SetFillMode(int i)
+{
+  _activePolyMode = GL_POINT + i;
+  glPolygonMode(GL_FRONT_AND_BACK, _activePolyMode);
+}
+
+
+
+ORB_Texture* Renderer::RenderText(const char* text, glm::vec4 const& color, int size)
 {
 
   TTF_SetFontSize(_activeFont->font, size);
-  Texture* t = TextureManager::Instance()->CreateFromMemeory(text, 0, 0, 0, 0);
+  ORB_Texture* t = TextureManager::Instance()->CreateFromMemeory(text, 0, 0, 0, 0);
   SDL_Rect rect = { 0, 0 };
   TTF_SizeText(_activeFont->font, text, &rect.w, &rect.h);
   if (t == nullptr)

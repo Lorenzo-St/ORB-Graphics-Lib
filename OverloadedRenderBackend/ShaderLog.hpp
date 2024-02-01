@@ -55,7 +55,6 @@ constexpr TraceLevels Error = TraceLevels::Low;
 constexpr TraceLevels Warning = TraceLevels::Normal;
 constexpr TraceLevels Message = TraceLevels::Extra;
 
-extern std::ofstream traceLog;
 /**
  * @brief Log to the console and trace.
  * 
@@ -75,10 +74,5 @@ static void Log(TraceLevels l, Arg&& arg1, vArgs&&... variadic)
               << toString(l) << "\t" <<  RESET << std::forward<Arg>(arg1);
     ((std::cout << " " << std::forward<vArgs>(variadic)), ...);
     std::cout << std::endl;
-    traceLog << tm.str() << "\t" << toString(l) << "\t" << std::forward<Arg>(arg1);
-    ((traceLog << " " << std::forward<vArgs>(variadic)), ...);
-    traceLog << std::endl;
 
-    if (l > TraceLevels::Normal)
-        traceLog << std::stacktrace::current() << std::endl;
 }

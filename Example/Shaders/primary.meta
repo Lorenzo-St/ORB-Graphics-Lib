@@ -1,0 +1,30 @@
+<ShaderStage>
+  <Vertex>
+    ./Shaders/vert.vert
+    <in>
+      Pos[2]=0
+      Color[4]=2
+      texCords[2]=6
+    </in>
+    <uniform>
+      objectMatrix[64]
+      CamMatrix[64]
+      WorldMatrix[64]
+      zoom[4]
+    </uniform>
+  </Vertex>
+  <Fragment>
+    ./Shaders/frag.frag
+    <uniform>
+      tex[unique]
+      textured[1]
+      globalColor[16]
+      texMulti[64]
+      sourceCount[41]
+      enableLighting[41]
+    </uniform>
+    <Buffers>
+      sources[9]
+    </Buffers>
+  </Fragment>
+</ShaderStage>

@@ -5,12 +5,13 @@
 #include "Stream.h"
 #include "Vertex.h"
 
-struct Mesh 
+struct ORB_Mesh 
 {
 public:
 
-  virtual ~Mesh();
-
+  virtual ~ORB_Mesh();
+  ORB_Mesh(int mode, std::vector<Vertex>&& verts, glm::vec4 col) : _drawMode(mode), _verticies(verts), _color(col) {};
+  ORB_Mesh() = default;
   virtual void Read(std::string file);
   virtual void Read(Stream& file);
   virtual void Execute() const {};

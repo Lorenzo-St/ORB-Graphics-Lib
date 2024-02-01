@@ -1,0 +1,12 @@
+<ShaderStage>
+  <Compute>
+    ./Managed/Shaders/flatten.comp
+    <uniform>
+      texIn[unique]
+      texOut[unique]
+      zdepth[41]
+    </uniform>
+    <Buffers>
+    </Buffers>
+  </Compute>
+</ShaderStage>

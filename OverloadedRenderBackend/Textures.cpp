@@ -36,7 +36,7 @@ void TextureManager::Log(TraceLevels l, Arg&& arg1, vArgs&&... variadic)
     }
 }
 
-Texture* TextureManager::LoadTexture(std::string const& filename, bool KeepAlive)
+ORB_Texture* TextureManager::LoadTexture(std::string filename, bool KeepAlive)
 {
     for (auto& t : _textures)
     {
@@ -52,16 +52,16 @@ Texture* TextureManager::LoadTexture(std::string const& filename, bool KeepAlive
     GLuint texture = 0;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    Texture* t = nullptr;
+    ORB_Texture* t = nullptr;
     switch (channels)
     {
     case 4:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, file);
-        t = new Texture(texture, w, h, GL_RGBA32I, KeepAlive);
+        t = new ORB_Texture(texture, w, h, GL_RGBA32I, KeepAlive);
         break;
     case 3:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, file);
-        t = new Texture(texture, w, h, GL_RGB32I, KeepAlive);
+        t = new ORB_Texture(texture, w, h, GL_RGB32I, KeepAlive);
         break;
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -72,13 +72,13 @@ Texture* TextureManager::LoadTexture(std::string const& filename, bool KeepAlive
     return t;
 }
 
-Texture* TextureManager::LoadTexture(const char* filename)
+ORB_Texture* TextureManager::LoadTexture(const char* filename)
 {
     std::string s = std::string(filename);
     return LoadTexture(s);
 }
 
-Texture* TextureManager::CreateFromMemeory(std::string name, int w, int h, int depth, void* data)
+ORB_Texture* TextureManager::CreateFromMemeory(std::string name, int w, int h, int depth, void* data)
 {
     for (auto& t : _textures)
     {
@@ -92,7 +92,7 @@ Texture* TextureManager::CreateFromMemeory(std::string name, int w, int h, int d
     if (data == 0 || w == 0 || h == 0 || depth == 0)
         return nullptr;
     GLuint texture = 0;
-    Texture* t = nullptr;
+    ORB_Texture* t = nullptr;
     glGenTextures(1, &texture);
     // CheckError(__LINE__);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -102,12 +102,12 @@ Texture* TextureManager::CreateFromMemeory(std::string name, int w, int h, int d
     case 4:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         // CheckError(__LINE__);
-        t = new Texture(texture, w, h, GL_RGBA32I, false);
+        t = new ORB_Texture(texture, w, h, GL_RGBA32I, false);
         break;
     case 3:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         // CheckError(__LINE__);
-        t = new Texture(texture, w, h, GL_RGB32I, false);
+        t = new ORB_Texture(texture, w, h, GL_RGB32I, false);
         break;
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -116,7 +116,7 @@ Texture* TextureManager::CreateFromMemeory(std::string name, int w, int h, int d
     return t;
 }
 
-void TextureManager::DeleteTextureFromMemory(Texture* t)
+void TextureManager::DeleteTextureFromMemory(ORB_Texture* t)
 {
     Image i = t->texture();
     glDeleteTextures(1, &i);
@@ -132,7 +132,7 @@ void TextureManager::Update(void)
     }
 }
 
-void TextureManager::DropTexture(Texture* ti)
+void TextureManager::DropTexture(ORB_Texture* ti)
 {
     int idx = 0;
     for (auto& t : _textures)
@@ -162,7 +162,7 @@ void TextureManager::DropAll(void)
     _textures.clear();
 }
 
-std::vector<Texture*> const& TextureManager::GetTextures() const
+std::vector<ORB_Texture*> const& TextureManager::GetTextures() const
 {
     return _textures;
 }
@@ -177,7 +177,7 @@ TextureManager* TextureManager::Instance()
 TextureManager::TextureManager()
 {
     // Clear it to ensure no un initialized values?
-    _textures = std::vector<Texture*>();
+    _textures = std::vector<ORB_Texture*>();
     _textures.clear();
 }
 
@@ -198,38 +198,38 @@ __declspec(noinline) void TextureManager::checkError()
     }
 }
 
-Image const Texture::texture() const
+Image const ORB_Texture::texture() const
 {
-  const_cast<Texture*>(this)->IncramentUses();
+  const_cast<ORB_Texture*>(this)->IncramentUses();
     return _texture;
 }
 
-std::string const& Texture::name() const
+std::string const& ORB_Texture::name() const
 {
     return _name;
 }
 
-void Texture::name(std::string const& s)
+void ORB_Texture::name(std::string const& s)
 {
     _name = s;
 }
 
-int Texture::Width() const
+int ORB_Texture::Width() const
 {
     return _w;
 }
 
-int Texture::Height() const
+int ORB_Texture::Height() const
 {
     return _h;
 }
 
-GLenum Texture::Format() const
+GLenum ORB_Texture::Format() const
 {
     return _format;
 }
 
-void Texture::IncramentUses()
+void ORB_Texture::IncramentUses()
 {
     ++_uses;
 }

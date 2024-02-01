@@ -1,17 +1,19 @@
 // Example.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-
+//#define ORB_EXPOSE_GLM
+#include <Windows.h>
 #include <iostream>
 #include "OverloadedRenderBackend.h"
 #include <assert.h>
-texture image;
-mesh m;
-mesh tex;
-mesh temp;
+ORB_texture image;
+ORB_mesh m;
+ORB_mesh tex;
+ORB_mesh temp;
 Window* w;
+
 Vector2D boxPos;
 Vector2D mPosA;
-font f;
+ORB_font f;
 
 int callbackTest() 
 {
@@ -22,16 +24,15 @@ int callbackTest()
   orb::DrawRect(boxPos.x, boxPos.y, 100 , 100);
   
   orb::SetActiveTexture(nullptr);
-  
   orb::DrawMesh(m, { 2.0f,1.0f }, { 10.0f,10.0f }, {});
   orb::DrawMesh(temp, { -200.0f,1.0f }, { 100.0f,100.0f }, {});
   orb::DrawMesh(tex, { 100.0f,1.0f }, { 100.0f,100.0f }, {});
   orb::DrawMesh(temp, { -200.0f,1.0f }, { 150.0f,125.0f }, {});
   orb::DrawMesh(tex, { mPosA.x, mPosA.y, 0 }, { 200.0f,200.0f }, {});
-  
+  orb::DrawLine(Vector2D( 0,0 ), { 100, 100 });
   orb::SetActiveTexture(nullptr);
   orb::SetDrawColor(255, 255, 100, 120);
-  
+
   orb::DrawRect(mPosA.x, 1, 120, 400);
   orb::SetDrawColor(255, 30, 200, 255);
 
@@ -43,9 +44,12 @@ void MousePosTest(int x, int y, int, int)
 {
   mPosA = orb::ToWorldSpace({(float)x, (float)y });
 }
+void MouseButton(MOUSEBUTTON m, KEY_STATE k) 
+{
+  std::cout << static_cast<int>(m) << " " << static_cast<int>(k) << std::endl;
+}
 
-
-void KeyInput(char key, KEY_STATE state) 
+void KeyInput(uchar key, KEY_STATE state) 
 {
   //std::cout << "Key Callback Triggered: Key=" << key << " State=" << static_cast<int>(state) << std::endl;
   
@@ -76,15 +80,14 @@ int main()
   orb::Initialize();
   w = orb::RetrieveWindow();
   orb::SetActiveWindow(w);
-  
   orb::RegisterRenderCallback(callbackTest);
   f = orb::LoadFont("./Adamina-Regular.ttf");
   orb::SetActiveFont(f);
   orb::RegisterKeyboardCallback(KeyInput);
   orb::RegisterMouseMovementCallback(MousePosTest);
-  
+  orb::RegisterMouseButtonCallback(MouseButton);
+  orb::SetWindowMax(w);
   image = orb::LoadTexture("./orb.png");
-  std::cout << orb::GetError() << std::endl;
   orb::BeginMesh();
 
   orb::MeshAddVertex({-.5f, -.5f }, { 1,1,1,1 }, { 0,1 });
@@ -100,6 +103,7 @@ int main()
   orb::SetWindowClearColor(w, { 1,1,1,1 });
   temp = orb::LoadMesh("./Circle.dat");
   tex = orb::LoadTexMesh("./TexCircle.dat");
+  orb::SetZoom(2);
   while (orb::IsRunning())
   {
     orb::Update();

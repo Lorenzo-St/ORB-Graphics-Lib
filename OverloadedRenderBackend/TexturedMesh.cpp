@@ -19,7 +19,7 @@ extern Renderer* active;
   LoadTexture(path.c_str());
 }
 
-void TexturedMesh::SetTexture(Texture* _t)
+void TexturedMesh::SetTexture(ORB_Texture* _t)
 {
   t = _t;
 }
@@ -56,7 +56,7 @@ void TexturedMesh::Read(Stream& file)
   }
   break;
   }
-  this->Mesh::Read(file);
+  this->ORB_Mesh::Read(file);
 }
 
 void TexturedMesh::Execute() const

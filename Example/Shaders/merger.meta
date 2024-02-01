@@ -1,0 +1,17 @@
+<ShaderStage>
+  <Vertex>
+    ./Managed/Shaders/fmerge.vert
+    <in>
+      Pos[2]=0
+      texPos[2]=2
+    </in>
+  </Vertex>
+  <Fragment>
+    ./Managed/Shaders/merger.frag
+    <uniform>
+      FBO[unique]
+      FBOArrray[unique]
+      array[1]
+    </uniform>
+  </Fragment>
+</ShaderStage>

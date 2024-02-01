@@ -1,0 +1,9 @@
+<RenderPass>
+  <Stages>
+    ./Shaders/primary[1]=0
+  </Stages>
+  <FBOs>
+    GLOW=4
+    LIGHT=4
+  </FBOs>
+</RenderPass>

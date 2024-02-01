@@ -1,0 +1,28 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32, local_size_z=1) in; 
+
+layout (rgba32f, binding = 0) uniform image3D texIn;
+layout (rgba32f, binding = 1) uniform image2D texOut;
+layout(location=0) uniform int zdepth;
+
+void main()
+{
+    ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+//    if(p.x == 32 || p.x == 690)
+//	      enablePrintf();
+
+    // Check each element against its immeadiate neighbor
+    // check the results against their immeadiate result neighbor
+    // repeat till I get 1 result
+    vec4 currentSolution = vec4(0,0,0,1);
+    for(int i = 0; i < zdepth;++i)
+    {
+        vec4 col = imageLoad(texIn, ivec3(p.xy, i));
+        int larger = int(step(col.a, currentSolution.a));
+        currentSolution = col * (larger) + currentSolution * (1-larger);
+    }
+//    if(p.x == 32|| p.x == 690)
+//        printf("Solution found, Setting value to %^4g", currentSolution);
+    imageStore(texOut, p, currentSolution);
+}

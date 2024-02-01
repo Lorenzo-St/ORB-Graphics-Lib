@@ -2,7 +2,7 @@
 #include "Mesh.h"
 #include "Wermal Reader.h"
 #include "Stream.h"
-Mesh::~Mesh()
+ORB_Mesh::~ORB_Mesh()
 {
 
 }
@@ -10,7 +10,7 @@ Mesh::~Mesh()
 
 
 
-void Mesh::Read(std::string file)
+void ORB_Mesh::Read(std::string file)
 {
   Stream s(file);
   fileTypes type = GetFileType(file.substr(file.rfind('.')));
@@ -25,7 +25,7 @@ void Mesh::Read(std::string file)
   Read(s);
 }
 
-void Mesh::Read(Stream& file)
+void ORB_Mesh::Read(Stream& file)
 {
   fileTypes type = GetFileType(file.Path().substr(file.Path().rfind('.')));
   switch (type)
@@ -44,6 +44,7 @@ void Mesh::Read(Stream& file)
       if (d.first == true && d.second.get()[0] != '\0')
       {
         v = *reinterpret_cast<Vertex*>(Parse<float>(d.second).get());
+        //std::cout << v << std::endl;
         _verticies.push_back(v);
       }
       else
@@ -56,32 +57,32 @@ void Mesh::Read(Stream& file)
 }
 
 
-glm::vec4 const& Mesh::Color() const
+glm::vec4 const& ORB_Mesh::Color() const
 {
   return _color;
 }
 
-glm::vec4& Mesh::Color()
+glm::vec4& ORB_Mesh::Color()
 {
   return _color;
 }
 
-std::vector<Vertex> const& Mesh::Verticies() const
+std::vector<Vertex> const& ORB_Mesh::Verticies() const
 {
   return _verticies;
 }
 
-GLuint& Mesh::DrawMode()
+GLuint& ORB_Mesh::DrawMode()
 {
   return _drawMode;
 }
 
-GLuint Mesh::DrawMode() const
+GLuint ORB_Mesh::DrawMode() const
 {
   return _drawMode;
 }
 
-void Mesh::AddVertex(Vertex const& v)
+void ORB_Mesh::AddVertex(Vertex const& v)
 {
   _verticies.push_back(v);
 }

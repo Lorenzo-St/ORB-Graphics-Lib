@@ -19,7 +19,7 @@ void CheckError(int);
 
 extern std::vector<Window*> activeWindows;
 extern Window* defaultWindow;
-
+extern unsigned int _activePolyMode;
 void RenderPass::WriteAttribute(std::string s, void* data)
 {
   std::get<2>(_activeShaderStage)->WriteAttribute(s, data);
@@ -67,7 +67,7 @@ void RenderPass::FlattenFBOs()
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   s->UnBindBuffer("VBO");
   s->UnBindBuffer("VAO");
-  //glPolygonMode(GL_FRONT_AND_BACK, activePolyMode);
+  glPolygonMode(GL_FRONT_AND_BACK, _activePolyMode);
 
 }
 
@@ -144,6 +144,7 @@ std::array<frameBufferObject, 3> const& RenderPass::GetSecondaryFBOs()
 
 void RenderPass::ResetRender()
 {
+
   _activeStage = renderStage::PreRender;
   auto lambdaShaderPass = [this](std::pair<const std::string, ShaderPass> s) {
     return (std::get<0>(s.second) == _activeStage) && (std::get<1>(s.second) == 0);
@@ -157,24 +158,30 @@ void RenderPass::ResetRender()
   for (int i = 0; i < 3; ++i)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, std::get<1>(_primaryFBOs[i]));
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      return;
     glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, std::get<1>(_secondaryFBOs[i]));
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      return;
     glClear(GL_COLOR_BUFFER_BIT);
   }
 
   for (auto& fbo : _additionalFBOs)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, std::get<1>(fbo.second));
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      return;
     glClear(GL_COLOR_BUFFER_BIT);
   }
 }
 
 void RenderPass::ResizeFBOs()
 {
-  auto screenSize = /*GLBackend::GetWindowDimensions();*/ glm::vec2(1280, 720);
+  auto screenSize = glm::vec2(defaultWindow->w, defaultWindow->h);
   for (auto& p : _primaryFBOs)
   {
-    // glBindFramebuffer(GL_FRAMEBUFFER, std::get<2>(p));
+     glBindFramebuffer(GL_FRAMEBUFFER, std::get<2>(p));
     glBindTexture(GL_TEXTURE_2D, std::get<2>(p));
     glTexImage2D(
       GL_TEXTURE_2D,
@@ -233,6 +240,7 @@ void RenderPass::ResizeFBOs()
       glGetError() == 0 && "And if he is as bananas as you say, I'm not taking any chances");
   }
   glBindTexture(GL_TEXTURE_2D, 0);
+  //glViewport(0, 0, defaultWindow->vx, defaultWindow->vh);
 }
 
 void RenderPass::ResizeSpecificFBO(std::string s, glm::vec2 const& newSize)
@@ -371,9 +379,10 @@ RenderPass::RenderPass(const char* f) : RenderPass(std::string(f))
 
 
 
-RenderPass::RenderPass(std::string path)
+RenderPass::RenderPass(std::string path) : _flattenStage(new ShaderStage(1))
 {
-  Stream file("./Managed/shaders/" + path);
+
+  Stream file(path);
   if (file.Open() == false)
     throw std::invalid_argument("Bad file path");
   // Read each line and check for <
@@ -407,7 +416,7 @@ RenderPass::RenderPass(std::string path)
             unsigned int id = std::stoi(token);
             ShaderStage* s = new ShaderStage(name + ".meta");
             s->parent = this;
-            _passess[name] = { stage, id, s };
+            _passess[name.substr(name.rfind('/') + 1)] = {stage, id, s};
           }
         }
       }
@@ -450,6 +459,7 @@ RenderPass::RenderPass(std::string path)
       }
     }
   }
+  
 }
 
 RenderPass::RenderPass(RenderPass const& r)
@@ -464,6 +474,28 @@ RenderPass& RenderPass::operator=(RenderPass const&)
 
 RenderPass::~RenderPass()
 {
+  for (auto& pass : _passess) 
+  {
+    delete std::get<2>(pass.second);
+  }
+  for (auto& fbo : _additionalFBOs) 
+  {
+    glDeleteFramebuffers(1,  & std::get<1>(fbo.second));
+    glDeleteTextures(1, &std::get<2>(fbo.second));
+
+  }
+  for (auto& fbo : _primaryFBOs)
+  {
+    glDeleteFramebuffers(1, &std::get<1>(fbo));
+    glDeleteTextures(1, &std::get<2>(fbo));
+
+  }
+  for (auto& fbo : _secondaryFBOs)
+  {
+    glDeleteFramebuffers(1, &std::get<1>(fbo));
+    glDeleteTextures(1, &std::get<2>(fbo));
+
+  }
 }
 
 
@@ -475,7 +507,6 @@ void RenderPass::Update()
   // Call all callbacks
   // After all callbacks get called move to next stage
   signed int id = static_cast<int>(std::get<1>(_activeShaderStage));
-
   // Continuously search till we find either a valid render stage or don't
   bool broken = false;
   while (!broken)
@@ -585,7 +616,7 @@ void RenderPass::BindActiveFBO(int id)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return;
   }
-  auto find = [this, id](std::pair<std::string, frameBufferObject> const& a) -> bool {
+  auto find = [&](std::pair<std::string, frameBufferObject> const& a) -> bool {
     return (std::get<0>(a.second) == _activeStage) && (std::get<1>(a.second) == id);
     };
   switch (_activeStage)

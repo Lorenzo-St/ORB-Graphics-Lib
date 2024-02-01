@@ -13,7 +13,7 @@
 #include <vector>
 typedef GLuint Image;
 
-typedef struct Texture
+typedef struct ORB_Texture
 {
 public:
     friend class TextureManager;
@@ -24,7 +24,7 @@ public:
      * @param wi the width of the texture
      * @param he the height of the texture
      */
-    Texture(Image te, int wi, int he, GLenum format, bool keepAlive)
+    ORB_Texture(Image te, int wi, int he, GLenum format, bool keepAlive)
         : _texture(te), _w(wi), _h(he), _uses(0), _format(format), _keepAlive(keepAlive)
     {
     }
@@ -85,14 +85,14 @@ public:
      * @param filename std::string of filename
      * @return the loaded texture
      */
-    Texture* LoadTexture(std::string const& filename, bool KeepAlive = true);
+    ORB_Texture* LoadTexture(std::string filename, bool KeepAlive = true);
     /**
      * @brief Load a texutre.
      *
      * @param filename const char* to filename
      * @return the loaded texutre
      */
-    Texture* LoadTexture(const char* filename);
+    ORB_Texture* LoadTexture(const char* filename);
     /**
      * @brief Create a texture from program memory.
      *
@@ -105,13 +105,13 @@ public:
      * @return the texture created. NOTE: To delete the texture later you must use
      * DeleteTextureFromMemory
      */
-    Texture* CreateFromMemeory(std::string name, int w, int h, int depth, void* data);
+    ORB_Texture* CreateFromMemeory(std::string name, int w, int h, int depth, void* data);
     /**
      * @brief Deletes a texture made in memory.
      *
      * @param t the texture
      */
-    void DeleteTextureFromMemory(Texture* t);
+    void DeleteTextureFromMemory(ORB_Texture* t);
     /**
      * @brief Upate the manager
      *
@@ -122,7 +122,7 @@ public:
      *
      * @param t the texture to delete
      */
-    void DropTexture(Texture* t);
+    void DropTexture(ORB_Texture* t);
     /**
      * @brief Delete all textures.
      *
@@ -142,7 +142,7 @@ public:
     template <typename Arg, typename... vArgs>
     void Log(TraceLevels l, Arg&& arg1, vArgs&&... variadic);
 
-    std::vector<Texture*> const& GetTextures() const;
+    std::vector<ORB_Texture*> const& GetTextures() const;
     static TextureManager* Instance();
 private:
   TextureManager();
@@ -152,7 +152,7 @@ private:
    */
   ~TextureManager();
     void checkError();
-    std::vector<Texture*> _textures;
+    std::vector<ORB_Texture*> _textures;
     static inline TextureManager* _instance;
 };
 

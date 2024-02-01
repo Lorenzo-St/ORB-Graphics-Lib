@@ -1,0 +1,133 @@
+#version 430
+
+struct lightSource
+{
+    vec2 pos; // 8  |
+    vec2 lightingSideVectorA;
+    vec2 lightingSideVectorB;
+    float sideAMag;
+    float sideBMag;
+    float sidesDot;
+    float angle;
+    float intensity; // 4  | could potentially make color and intensity not be float
+    int angled;
+}; 
+
+struct wall
+{
+    vec2 pos;   // 8
+    vec2 scale; // 8
+};  
+
+layout (local_size_x = 32, local_size_y = 32, local_size_z=1) in; 
+
+layout (rgba32f) uniform image3D tex;
+
+layout(location = 3)uniform vec2 fboCorner;
+layout(location = 8)uniform float zoom;
+layout(location = 9)uniform int wallCount;
+layout(std430, binding=1) buffer sources
+{
+    lightSource boundSources[];
+};
+layout(std430, binding=2)buffer walls
+{
+    wall boundWalls[];
+};
+
+int pointBoxColl(in vec2 point, in vec2 boxPos, in vec2 scale)
+{
+    vec2 diff = abs(point - boxPos);
+    float x = step(diff.x, scale.x/2);
+    float y = step(diff.y, scale.y/2);
+    int net = int(x + y);
+    return clamp(net - 1, 0, 1);
+}
+
+int rayBoxCollision(in vec2 start_pos, in vec2 ray, in vec2 box_pos, in vec2 box_scale)
+{
+    vec2 start_to_box = box_pos - start_pos;
+    float ray_xbox = dot(start_to_box, ray);
+    float ray_squared = dot(ray, ray);
+    vec2 norm = normalize(ray);
+    vec2 projected = start_pos +  (ray *  ray_xbox/ray_squared);
+    vec2 box_to_nearest = projected - box_pos;
+    int side = int(abs(box_to_nearest[0]) > abs(box_to_nearest[1]));
+    vec2 box_to_start = start_pos - box_pos;
+    vec2 dir = vec2(float(side), float(1.0 - side));   
+    dir *= box_to_start;
+    dir = normalize(dir);
+    vec2 half_scale = box_scale/2.0;
+    vec2 edge = dir * half_scale;
+    vec2 l = vec2(float(int(abs(dir.x) > abs(dir.x))), float(int(abs(dir.x) > abs(dir.y))));
+    edge += box_pos;
+    float time = abs(((((edge.x - start_pos.x) * l.y) - (l.x * (edge.y - start_pos.y)))/(norm.x * l.y - norm.y * l.x)));
+    vec2 r = start_pos +  norm * time;
+    return pointBoxColl(r, box_pos, box_scale);
+}
+
+
+
+
+
+int checkCollision(in vec2 lightPos, in vec2 pixel)
+{
+    vec2 ray = pixel - lightPos;
+    for(int i = 0; i < wallCount; ++i)
+    {
+        if(rayBoxCollision(lightPos, ray, boundWalls[i].pos, boundWalls[i].scale) == 1)
+            return 0;
+    }
+
+
+    return 1;
+}
+
+
+
+
+const int blockSizeX = 16;
+const int blockSizeY = 1;
+const float gamma = 0.00025;
+const float hazeScale = 2;
+void main()
+{
+    ivec3 p = ivec3(gl_GlobalInvocationID.xyz) * ivec3(blockSizeX, blockSizeY, 1);
+    float calculatedColors[blockSizeX * blockSizeY];
+    lightSource temp = boundSources[p.z];
+    // calculate the color for the pixel
+    for(int y = 0;  y < blockSizeY; ++y)
+    {
+        for(int x = 0; x < blockSizeX; ++x)
+        {
+            ivec2 localPos = ivec2(p.x + x, p.y + y);
+            vec2 pos = (localPos.xy * zoom) + fboCorner;
+            vec2 dis = (temp.pos - pos);
+            float mag = length(dis);
+
+
+            float dotA = dot(dis, temp.lightingSideVectorA);
+            float dotB = dot(dis, temp.lightingSideVectorB);
+            
+            float angleA = acos(dotA/(temp.sideAMag * mag));
+            float angleB = acos(dotB/(temp.sideBMag * mag));
+            float sum = (angleA+angleB) - temp.angle * temp.angled;
+            float val = sum * temp.angled;
+            float inten = temp.intensity / dot(dis,dis) * (1-(val * hazeScale));
+//            int collided = checkCollision(temp.pos, pos);
+            inten = clamp(inten, 0. ,1.);
+            int index = x + (blockSizeX * y);
+            calculatedColors[index] = (1 - inten);
+            
+        }
+    }
+    for(int y = 0;  y < blockSizeY; ++y)
+    {
+        for(int x = 0; x < blockSizeX; ++x)
+        {
+            ivec3 localPos = ivec3(p.x + x, p.y + y, p.z );
+             int index = x + (blockSizeX * y);
+             imageStore(tex, localPos, vec4(0,0,0,calculatedColors[index]));
+        }
+    }
+}

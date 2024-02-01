@@ -151,7 +151,6 @@ void ShaderStage::InitializeShaderProgram()
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
-
   for (auto& uni : _uniformAttributes)
   {
     uni.second.first = glGetUniformLocation(_program, uni.first.c_str());
@@ -262,7 +261,7 @@ ShaderStage::ShaderStage(int version)
 
   };
   _program = glCreateProgram();
-
+  Log(Message, "Standard Shader Ctor");
   switch (static_cast<VERSIONS>(version))
   {
   case VERSIONS::DEFAULT_RENDER:
@@ -414,12 +413,13 @@ ShaderStage::ShaderStage(int version)
 
 ShaderStage::ShaderStage(std::string path)
 {
-  Stream file("./Managed/shaders/" + path);
+  Stream file(path);
   if (file.Open() == false)
   {
     Log(Error, "Bad FIle Path:", path);
     throw std::invalid_argument("Bad file path");
   }
+  
   // Read each line and check for <
   std::string token;
   _program = glCreateProgram();
@@ -436,7 +436,7 @@ ShaderStage::ShaderStage(std::string path)
         _activeShaders |= static_cast<int>(shaderStages::vertex);
 
         GLuint vert = CreateShader(
-          GL_VERTEX_SHADER, ("./Managed/shaders/" + file.readString()).c_str());
+          GL_VERTEX_SHADER, (file.readString()).c_str());
         // Create the shader
         shaders.push_back(vert);
         assert(glIsShader(vert) && "Shader was not created properly");
@@ -447,7 +447,7 @@ ShaderStage::ShaderStage(std::string path)
       {
         _activeShaders |= static_cast<int>(shaderStages::fragment);
         GLuint frag = CreateShader(
-          GL_FRAGMENT_SHADER, ("./Managed/shaders/" + file.readString()).c_str());
+          GL_FRAGMENT_SHADER,  (file.readString()).c_str());
         assert(glIsShader(frag) && "Shader was not created properly");
         glAttachShader(_program, frag);
         shaders.push_back(frag);
@@ -476,7 +476,7 @@ ShaderStage::ShaderStage(std::string path)
         {
           _activeShaders |= static_cast<int>(shaderStages::compute);
           GLuint com = CreateShader(
-            GL_COMPUTE_SHADER, ("./Managed/shaders/" + file.readString()).c_str());
+            GL_COMPUTE_SHADER, (file.readString()).c_str());
           assert(glIsShader(com) && "Shader was not created properly");
           glAttachShader(_program, com);
           shaders.push_back(com);
