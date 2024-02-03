@@ -651,6 +651,15 @@ namespace orb
     active->DispatchCompute(x, y, z);
   }
 
+  ORB_SPEC void ORB_API WriteSubBufferData(std::string buffer, int index, size_t structSize, void* data)
+  {
+    active->WriteSubBufferData(buffer, index, structSize, data);
+  }
+
+  ORB_SPEC void ORB_API DrawIndexed(int start, int count)
+  {
+  }
+
 }
 Vector2D::Vector2D(float _x, float _y) : x(_x), y(_y) {}
 Vector2D::Vector2D(Vector3D const& a) : x(a.x), y(a.y) {}

@@ -73,7 +73,7 @@ public:
 
   void DrawRect(glm::vec2 pos, glm::vec2 scale, float rot, uint depth = 1);
   void DrawMesh(std::vector<Vertex> const& v, uint depth, int poly = 6);
-
+  void DrawIndexed(std::vector<Vertex> const& v, int count, int poly = 6);
 
   void SetColor(glm::vec4 const& color);
   void SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale);
@@ -91,9 +91,9 @@ public:
   void SetActiveTexture(ORB_Texture* t);
   
   void WriteBuffer(std::string buffer, size_t dataSize, void* data);
-  
-  void WriteUniform(std::string buffer, void* data);
+  void WriteSubBufferData(std::string, int index, size_t structSize, void* data);
 
+  void WriteUniform(std::string buffer, void* data);
   void DispatchCompute(int x, int y, int z);
 
   glm::vec2 ToWorldSpace(glm::vec2);

@@ -692,6 +692,12 @@ namespace orb
    * @param z - Workgroup count in z
    */
   extern ORB_SPEC void ORB_API DispatchCompute(int x, int y, int z);
+
+  // TODO: Subuffer data
+  extern  ORB_SPEC void ORB_API WriteSubBufferData(std::string, int index, size_t structSize, void* data);
+  // TODO: Indexed Draw
+  extern ORB_SPEC void ORB_API DrawIndexed(int start, int count);
+
 }
 
 

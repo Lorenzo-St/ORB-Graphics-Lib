@@ -298,6 +298,11 @@ glm::vec2 Renderer::ToWorldSpace(glm::vec2 src)
   return src * glm::vec2(1/_zoom, -1 / _zoom) + glm::vec2(-(_window->w / (2.0f * _zoom)), (_window->h / (2.0f * _zoom)));
 }
 
+void Renderer::WriteSubBufferData(std::string, int index, size_t structSize, void* data)
+{
+
+}
+
 void Renderer::DispatchCompute(int x, int y, int z)
 {
   _activePass->DispatchCompute(x, y, z);
@@ -405,6 +410,18 @@ void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale)
 void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale, float rot)
 {
   SetMatrix(pos, scale, glm::vec3(rot, 0, 0));
+}
+
+void Renderer::DrawIndexed(std::vector<Vertex> const& v, int count, int poly)
+{
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    return;
+  _activePass->BindBuffer(_window->VAO);
+  _activePass->BindBuffer("VBO");
+  _activePass->WriteBuffer("VBO", v.size() * sizeof(Vertex), (void*)v.data());
+  glDrawArraysInstanced(poly, 0, v.size(), count);
+  _activePass->UnBindBuffer("VBO");
+  _activePass->UnBindBuffer(_window->VAO);
 }
 
 void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale, glm::vec3 const& rot)
