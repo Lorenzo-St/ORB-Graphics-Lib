@@ -118,6 +118,10 @@ public:
      */
     void WriteAttribute(std::string buffer, void* data);
 
+    void WriteSubBufferData(std::string, int index, size_t structSize, void* data);
+
+    void SetBufferBase(std::string buffer, int base);
+
     /**
      * @brief Flatten all active FBOs.
      * 

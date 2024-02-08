@@ -85,6 +85,11 @@ public:
      * @param data the data to write
      */
     void WriteBuffer(std::string s, size_t dataSize, void* data);
+
+    void WriteSubBufferData(std::string, int index, size_t structSize, void* data);
+    void SetBufferBase(std::string buffer, int base);
+
+
     /**
      * @brief Bind a buffer
      *

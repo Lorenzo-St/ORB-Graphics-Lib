@@ -92,7 +92,7 @@ public:
   
   void WriteBuffer(std::string buffer, size_t dataSize, void* data);
   void WriteSubBufferData(std::string, int index, size_t structSize, void* data);
-
+  void SetBufferBase(std::string buffer, int base);
   void WriteUniform(std::string buffer, void* data);
   void DispatchCompute(int x, int y, int z);
 

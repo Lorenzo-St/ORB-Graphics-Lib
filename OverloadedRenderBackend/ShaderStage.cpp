@@ -274,9 +274,10 @@ ShaderStage::ShaderStage(int version)
     layout(location = 2) out vec4 color;\
     uniform mat4 objectMatrix;\
     uniform mat4 screenMatrix;\
+    uniform float zoom;\
     void main()\
     {\
-      gl_Position = screenMatrix * objectMatrix * pos;\
+      gl_Position = screenMatrix * objectMatrix * pos * zoom;\
       texPos = texcoord;\
       color = vecColor;\
     }";
@@ -329,6 +330,8 @@ ShaderStage::ShaderStage(int version)
     _uniformAttributes["tex"] = { 0, ULLONG_MAX };
     _uniformAttributes["textured"] = { 0, 1 };
     _uniformAttributes["globalColor"] = { 0, 16 };
+    _uniformAttributes["zoom"] = { 0, 4 };
+
 
     _activeShaders |= static_cast<int>(shaderStages::fragment) | static_cast<int>(shaderStages::vertex);
 
@@ -487,7 +490,6 @@ ShaderStage::ShaderStage(std::string path)
       {
         while (true)
         {
-
           token = file.readString();
           if (makeLowerCase(token) == "</in>")
             break;
@@ -632,6 +634,17 @@ void ShaderStage::WriteBuffer(std::string s, size_t dataSize, void* data)
   glBufferData(bufferObject.second, dataSize, data, GL_STATIC_DRAW);
 }
 
+
+void ShaderStage::WriteSubBufferData(std::string s, int index, size_t structSize, void* data)
+{
+  auto& bufferObject = _buffers[s];
+  glBufferSubData(bufferObject.second, index * structSize, structSize, data);
+}
+void ShaderStage::SetBufferBase(std::string buffer, int base)
+{
+  auto& bufferObject = _buffers[buffer];
+  glBindBufferBase(bufferObject.second, base, bufferObject.first);
+}
 void ShaderStage::BindBuffer(std::string s)
 {
   auto& bufferObject = _buffers[s];

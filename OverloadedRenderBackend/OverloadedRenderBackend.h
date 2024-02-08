@@ -667,6 +667,9 @@ namespace orb
   extern ORB_SPEC void ORB_API LoadCustomRenderPass(std::string const& path);
   extern ORB_SPEC void ORB_API LoadCustomRenderPass(const char* path);
 
+
+  extern ORB_SPEC void ORB_API SetBufferBase(std::string buffer, int base);
+
   /**
    * @brief Write data to a buffer.
    *        Note: This function binds and un binds the buffer being written to
@@ -693,10 +696,24 @@ namespace orb
    */
   extern ORB_SPEC void ORB_API DispatchCompute(int x, int y, int z);
 
-  // TODO: Subuffer data
-  extern  ORB_SPEC void ORB_API WriteSubBufferData(std::string, int index, size_t structSize, void* data);
-  // TODO: Indexed Draw
-  extern ORB_SPEC void ORB_API DrawIndexed(int start, int count);
+  /**
+   * @brief Write to a specific index in a buffer.
+   *        Note: This function binds and un binds the buffer being written to
+   * @param buffer the buffer name to write to
+   * @param index the index into the data
+   * @param structSize the size of one single element
+   * @param data the data to write
+   */
+  extern  ORB_SPEC void ORB_API WriteSubBufferData(std::string buffer, int index, size_t structSize, void* data);
+  
+  /**
+   * @brief Draw a mesh multiple times in one draw call.
+   * 
+   * @param m the mesh 
+   * @param count how many instances to draw
+   */
+  extern ORB_SPEC void ORB_API DrawIndexed(ORB_mesh m, int count);
+
 
 }
 

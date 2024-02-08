@@ -14,29 +14,35 @@ Window* w;
 Vector2D boxPos;
 Vector2D mPosA;
 ORB_font f;
-
-int callbackTest() 
+float x = 0, y = 0;
+int callbackTest()
 {
   orb::SetActiveWindow(w);
-  
+
   orb::SetDrawColor(255, 255, 255, 255);
   orb::SetActiveTexture(image);
-  orb::DrawRect(boxPos.x, boxPos.y, 100 , 100);
-  
+  orb::DrawRect(boxPos.x, boxPos.y, 100, 100);
+
   orb::SetActiveTexture(nullptr);
   orb::DrawMesh(m, { 2.0f,1.0f }, { 10.0f,10.0f }, {});
   orb::DrawMesh(temp, { -200.0f,1.0f }, { 100.0f,100.0f }, {});
   orb::DrawMesh(tex, { 100.0f,1.0f }, { 100.0f,100.0f }, {});
   orb::DrawMesh(temp, { -200.0f,1.0f }, { 150.0f,125.0f }, {});
   orb::DrawMesh(tex, { mPosA.x, mPosA.y, 0 }, { 200.0f,200.0f }, {});
-  orb::DrawLine(Vector2D( 0,0 ), { 100, 100 });
+  orb::DrawLine(Vector2D(0, 0), { 100, 100 });
   orb::SetActiveTexture(nullptr);
   orb::SetDrawColor(255, 255, 100, 120);
 
   orb::DrawRect(mPosA.x, 1, 120, 400);
   orb::SetDrawColor(255, 30, 200, 255);
 
-  orb::WriteText("Hello", { 10, 10 }, 100, {1, 1, 1, 1});
+  orb::WriteText("Hello", { 10, 10 }, 100, { 1, 1, 1, 1 });
+
+  orb::SetDrawColor(0, 0, 0, 255);
+  orb::DrawRect({ -x, -y, }, { 50,50 }, 1);
+  orb::SetDrawColor(255, 255, 255, 255);
+  orb::DrawRect(orb::GetCameraPosition(), { 50, 50 }, 2);
+  orb::DrawIndexed(m, 100);
   return 0;
 }
 
@@ -103,10 +109,16 @@ int main()
   orb::SetWindowClearColor(w, { 1,1,1,1 });
   temp = orb::LoadMesh("./Circle.dat");
   tex = orb::LoadTexMesh("./TexCircle.dat");
-  orb::SetZoom(2);
+  orb::SetZoom(3);
+  float time = 0;
   while (orb::IsRunning())
   {
     orb::Update();
+    x = 500 * cos(time);
+    y = 500 * sin(time);
+    orb::SetCameraPosition({ x, y});
+    time += 1.f / 60.f * .1f;
+
 
   }
   

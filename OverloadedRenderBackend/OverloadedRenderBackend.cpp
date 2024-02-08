@@ -138,15 +138,10 @@ namespace orb
         case SDL_WINDOWEVENT_RESIZED:
         case SDL_WINDOWEVENT_MAXIMIZED:
         case SDL_WINDOWEVENT_MINIMIZED:
-          int x, y, wi, he;
           glm::vec2 oldSize = { (*winPointer)->w, (*winPointer)->h };
           bool foc = SDL_GetWindowGrab(w);
-          SDL_GetWindowPosition(w, &x, &y);
-          SDL_GetWindowSize(w, &wi, &he);
-          (*winPointer)->w = wi;
-          (*winPointer)->h = he;
-          (*winPointer)->x = x;
-          (*winPointer)->y = y;
+          SDL_GetWindowPosition(w, &((*winPointer)->x), &((*winPointer)->y));
+          SDL_GetWindowSize(w, &((*winPointer)->w), &((*winPointer)->h));
           glm::vec2 newSize = { (*winPointer)->w,(*winPointer)->h };
           glm::vec2 ratio = ((newSize.y != 0) ? newSize
             : ((*winPointer)->w = static_cast<int>(oldSize.x),
@@ -154,15 +149,11 @@ namespace orb
               oldSize)) /
             oldSize;
           active->_zoom *= ratio.y;
-          (*winPointer)->vw = wi;
-          (*winPointer)->vh = he;
-          (*winPointer)->vx = x;
-          (*winPointer)->vy = y;
 
           if (windowFunction != nullptr)
           {
 
-            windowFunction(*winPointer, x, y, wi, he, foc);
+            windowFunction(*winPointer, (*winPointer)->x, (*winPointer)->y, (*winPointer)->w, (*winPointer)->h, foc);
           }
           active->GetCamera().setZoom(active->_zoom);
 
@@ -636,6 +627,11 @@ namespace orb
     LoadCustomRenderPass(std::string(path));
   }
 
+  ORB_SPEC void ORB_API SetBufferBase(std::string buffer, int base)
+  {
+    active->SetBufferBase(buffer, base);
+  }
+
   ORB_SPEC void ORB_API WriteBuffer(std::string buffer, size_t dataSize, void* data)
   {
     active->WriteBuffer(buffer, dataSize, data);
@@ -656,10 +652,10 @@ namespace orb
     active->WriteSubBufferData(buffer, index, structSize, data);
   }
 
-  ORB_SPEC void ORB_API DrawIndexed(int start, int count)
+  ORB_SPEC void ORB_API DrawIndexed(ORB_mesh m, int count)
   {
+    active->DrawIndexed(m->Verticies(), count, m->DrawMode());
   }
-
 }
 Vector2D::Vector2D(float _x, float _y) : x(_x), y(_y) {}
 Vector2D::Vector2D(Vector3D const& a) : x(a.x), y(a.y) {}

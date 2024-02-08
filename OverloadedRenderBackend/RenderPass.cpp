@@ -25,6 +25,16 @@ void RenderPass::WriteAttribute(std::string s, void* data)
   std::get<2>(_activeShaderStage)->WriteAttribute(s, data);
 }
 
+void RenderPass::WriteSubBufferData(std::string s, int index, size_t structSize, void* data)
+{
+  std::get<2>(_activeShaderStage)->WriteSubBufferData(s, index, structSize, data);
+}
+
+void RenderPass::SetBufferBase(std::string buffer, int base)
+{
+  std::get<2>(_activeShaderStage)->SetBufferBase(buffer, base);
+}
+
 void RenderPass::FlattenFBOs()
 {
   const SDL_Window* const pr = SDL_GL_GetCurrentWindow();
@@ -153,6 +163,7 @@ void RenderPass::ResetRender()
   if (it != _passess.end())
   {
     _activeShaderStage = it->second;
+    std::get<1>(_activeShaderStage) = -1;
   }
   glClearColor(0, 0, 0, 0);
   for (int i = 0; i < 3; ++i)
@@ -672,6 +683,5 @@ void RenderPass::UnBindActiveFBO()
 
 void RenderPass::WriteBuffer(std::string s, size_t dataSize, void* data)
 {
-  auto& shader = std::get<2>(_activeShaderStage);
-  shader->WriteBuffer(s, dataSize, data);
+  std::get<2>(_activeShaderStage)->WriteBuffer(s, dataSize, data);
 }

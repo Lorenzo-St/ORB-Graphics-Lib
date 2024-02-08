@@ -28,11 +28,12 @@ public:
   {
     if (dirty)
     {
-      matrix = glm::translate(glm::identity<glm::mat4>(), position);
+      
+      matrix = glm::scale(glm::identity<glm::mat4>(), glm::vec3(zoom, zoom, zoom));
       matrix = glm::rotate(matrix, glm::radians(rotation.x), { 0, 0, 1 });
       matrix = glm::rotate(matrix, glm::radians(rotation.y), { 1, 0, 0 });
       matrix = glm::rotate(matrix, glm::radians(rotation.z), { 0, 1, 0 });
-      matrix = glm::scale(matrix, glm::vec3(zoom, zoom, zoom));
+      matrix = glm::translate(matrix, position);
       dirty = false;
     }
     return matrix;

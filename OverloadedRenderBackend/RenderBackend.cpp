@@ -295,12 +295,24 @@ void Renderer::WriteUniform(std::string uniform, void* data)
 
 glm::vec2 Renderer::ToWorldSpace(glm::vec2 src)
 {
-  return src * glm::vec2(1/_zoom, -1 / _zoom) + glm::vec2(-(_window->w / (2.0f * _zoom)), (_window->h / (2.0f * _zoom)));
+
+  auto screenSize = glm::vec2(_window->w, _window->h);
+  return ((src * glm::vec2(1, -1)) + glm::vec2(-(screenSize.x / 2.0f), (screenSize.y / 2.0f))) * (1.0f / _zoom) - mainCamera.Position();
+
 }
 
-void Renderer::WriteSubBufferData(std::string, int index, size_t structSize, void* data)
+void Renderer::SetBufferBase(std::string buffer, int base)
 {
+  _activePass->SetBufferBase(buffer, base);
 
+
+}
+
+void Renderer::WriteSubBufferData(std::string s, int index, size_t structSize, void* data)
+{
+  _activePass->BindBuffer(s);
+  _activePass->WriteSubBufferData(s, index, structSize, data);
+  _activePass->UnBindBuffer(s);
 }
 
 void Renderer::DispatchCompute(int x, int y, int z)
@@ -310,7 +322,8 @@ void Renderer::DispatchCompute(int x, int y, int z)
 
 glm::vec2 Renderer::ToScreenSpace(glm::vec2 src)
 {
-  return (src * glm::vec2(_zoom, -_zoom)  + glm::vec2((_window->w / (2.0f / _zoom)), -(_window->h / (2.0f / _zoom)))) ;
+  auto screenSize = glm::vec2(_window->w, _window->h);
+  return (src + mainCamera.Position() * _zoom + glm::vec2((screenSize.x / 2.0f), -(screenSize.y / 2.0f)) * glm::vec2(1, -1));
 }
 
 void Renderer::RegisterCallBack(int stage, int id, renderCallBack fn)
@@ -419,7 +432,7 @@ void Renderer::DrawIndexed(std::vector<Vertex> const& v, int count, int poly)
   _activePass->BindBuffer(_window->VAO);
   _activePass->BindBuffer("VBO");
   _activePass->WriteBuffer("VBO", v.size() * sizeof(Vertex), (void*)v.data());
-  glDrawArraysInstanced(poly, 0, v.size(), count);
+  glDrawArraysInstanced(poly, 0, static_cast<GLsizei>(v.size()), count);
   _activePass->UnBindBuffer("VBO");
   _activePass->UnBindBuffer(_window->VAO);
 }
@@ -570,6 +583,12 @@ void Renderer::UpdateRenderConstants()
     throw std::invalid_argument("ORB ERROR : Main rendering stage must have mat4 names 'screenMatrix'.This matrix will be used for camera and projection");
   }
 
+  if (_activePass->QuerryAttribute("zoom") == false)
+  {
+    std::cerr << "ORB ERROR: Main rendering stage must have float named 'zooom'. This matrix will be used for proper zooming of camera" << std::endl;
+    throw std::invalid_argument("ORB ERROR: Main rendering stage must have float named 'zooom'. This matrix will be used for proper zooming of camera");
+  }
+
 
   glm::mat4 camMat = mainCamera.GetMatrix();
   switch (_projection)
@@ -592,14 +611,14 @@ void Renderer::UpdateRenderConstants()
     break;
   }
   _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
-
+  _activePass->WriteAttribute("zoom", &_zoom);
   if (_activePass->QuerryAttribute("texMulti"))
   {
     const glm::mat4 iden = glm::identity<glm::mat4>();
     _activePass->WriteAttribute("texMulti", (void*)&iden[0][0]);
 
   }
-  glViewport(0,0, _window->vw,  _window->vh);
+  glViewport(0,0, _window->w,  _window->h);
 
 
 
