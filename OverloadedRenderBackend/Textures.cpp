@@ -64,7 +64,10 @@ ORB_Texture* TextureManager::LoadTexture(std::string filename, bool KeepAlive)
         t = new ORB_Texture(texture, w, h, GL_RGB32I, KeepAlive);
         break;
     }
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    if (t == nullptr)
+      return nullptr;
     // CheckError(__LINE__);
     t->name(filename);
     _textures.push_back(t);
@@ -232,4 +235,21 @@ GLenum ORB_Texture::Format() const
 void ORB_Texture::IncramentUses()
 {
     ++_uses;
+}
+
+void ORB_Texture::SetSampleMode(int mode)
+{
+  glBindTexture(GL_TEXTURE_2D, _texture);
+  switch (mode) 
+  {
+  case 0:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    break;
+  case 1:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    break;
+  }
+
 }

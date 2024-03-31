@@ -35,7 +35,8 @@ extern std::vector<Window*> activeWindows;
 
 void CheckError(int l)
 {
-#if _DEBUG
+
+#if _DEBUG & 0
   int i = glGetError();
   if (i != 0)
   {
@@ -45,7 +46,7 @@ void CheckError(int l)
 #endif
 }
 
-void RefreshWindow(Window* w) 
+void RefreshWindow(Window* w)
 {
   SDL_Event e;
   e.type = SDL_WINDOWEVENT;
@@ -98,8 +99,6 @@ Renderer::Renderer()
   glClear(GL_COLOR_BUFFER_BIT);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
-  //glEnable(GL_DEBUG_OUTPUT);
-  //glDebugMessageCallback(MessageCallback, 0);
 
   _activePass = new RenderPass();
   _window->primary = true;
@@ -116,6 +115,20 @@ Renderer::Renderer(std::string path) : Renderer()
 Renderer::Renderer(const char* path) : Renderer()
 {
   LoadRenderPass(path);
+}
+
+void Renderer::EnableDebugOutput(bool b)
+{
+  if (b)
+  {
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, 0);
+  }
+  else
+  {
+    glDisable(GL_DEBUG_OUTPUT);
+  }
+
 }
 
 Window* Renderer::GetWindow()
@@ -166,7 +179,8 @@ Window* Renderer::MakeWindow(std::string s)
 
 void Renderer::SetActiveWindow(Window* w)
 {
-  glFlush();
+  if (activeWindows.size() > 1)
+    glFlush();
 #if LOG_WINDOW_SWAPS
   static int change = 0;
   std::cout << "Changing to window " << w << " Change #" << change++ << std::endl;
@@ -320,6 +334,57 @@ void Renderer::DispatchCompute(int x, int y, int z)
   _activePass->DispatchCompute(x, y, z);
 }
 
+void Renderer::WriteRenderConstantsHere()
+{
+  enum projtype
+  {
+    ortho,
+    perspective,
+  };
+  if (_activePass->QuerryAttribute("screenMatrix") == false)
+  {
+    std::cerr << "ORB ERROR: Main rendering stage must have mat4 named 'screenMatrix'. This matrix will be used for camera and projection" << std::endl;
+    throw std::invalid_argument("ORB ERROR : Main rendering stage must have mat4 names 'screenMatrix'.This matrix will be used for camera and projection");
+  }
+
+  if (_activePass->QuerryAttribute("zoom") == false)
+  {
+    std::cerr << "ORB ERROR: Main rendering stage must have float named 'zooom'. This matrix will be used for proper zooming of camera" << std::endl;
+    throw std::invalid_argument("ORB ERROR: Main rendering stage must have float named 'zooom'. This matrix will be used for proper zooming of camera");
+  }
+
+
+  glm::mat4 camMat = mainCamera.GetMatrix();
+  switch (_projection)
+  {
+  case ortho:
+    _projectionMatrix = glm::ortho(
+      -_windowSize.x / 2.0f,
+      _windowSize.x / 2.0f,
+      -_windowSize.y / 2.0f,
+      _windowSize.y / 2.0f,
+      0.f,
+      1000.f);
+    _storedProjection = _projectionMatrix * camMat;
+    break;
+  case perspective:
+    glm::vec3 camPos = camMat * glm::vec4(0, 0, 0, 1);
+    glm::vec3 lookatPos = camMat * glm::vec4(0, 0, 2, 1);
+    _projectionMatrix = glm::perspective(120.0f, _windowSize.x / _windowSize.y, 1.0f, 1500.0f) * glm::lookAt(camPos, lookatPos, glm::vec3(0, 1, 0));
+    _storedProjection = _projectionMatrix * camMat;
+    break;
+  }
+  _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
+  _activePass->WriteAttribute("zoom", &_zoom);
+  if (_activePass->QuerryAttribute("texMulti"))
+  {
+    const glm::mat4 iden = glm::identity<glm::mat4>();
+    _activePass->WriteAttribute("texMulti", (void*)&iden[0][0]);
+
+  }
+
+}
+
 glm::vec2 Renderer::ToScreenSpace(glm::vec2 src)
 {
   auto screenSize = glm::vec2(_window->w, _window->h);
@@ -334,24 +399,28 @@ void Renderer::RegisterCallBack(int stage, int id, renderCallBack fn)
 
 void Renderer::DrawRect(glm::vec2 pos, glm::vec2 scale, float rot, uint depth)
 {
-  if (_window->primary == true)
+  if (depth != UINT_MAX)
   {
-    _activePass->BindActiveFBO(depth);
-
-    if (depth == 2)
+    if (_window->primary == true)
     {
-      _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
+      _activePass->BindActiveFBO(depth);
+      if (depth == 2)
+      {
+        _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
+      }
     }
-  }
-  else
-  {
-    _activePass->BindActiveFBO(-1);
-
-
+    else
+    {
+      _activePass->BindActiveFBO(-1);
+    }
   }
   if (_window->VAO == "")
   {
     _window->VAO = std::move(_activePass->MakeVAO(_window->name + "VAO"));
+  }
+  if (_activePass->HasVAO(_window->VAO) == false)
+  {
+    _activePass->MakeVAO(_window->VAO);
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     return;
@@ -375,22 +444,29 @@ void Renderer::DrawRect(glm::vec2 pos, glm::vec2 scale, float rot, uint depth)
 
 void Renderer::DrawMesh(std::vector<Vertex> const& v, uint depth, int poly)
 {
-  if (_window->primary == true)
+  if (depth != UINT_MAX)
   {
-    _activePass->BindActiveFBO(depth);
-    if (depth == 2)
+    if (_window->primary == true)
     {
-      _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
+      _activePass->BindActiveFBO(depth);
+      if (depth == 2)
+      {
+        _activePass->WriteAttribute("screenMatrix", &_projectionMatrix[0][0]);
+      }
     }
-  }
-  else
-  {
-    _activePass->BindActiveFBO(-1);
+    else
+    {
+      _activePass->BindActiveFBO(-1);
+    }
   }
 
   if (_window->VAO == "")
   {
     _window->VAO = std::move(_activePass->MakeVAO(_window->name + "VAO"));
+  }
+  if (_activePass->HasVAO(_window->VAO) == false)
+  {
+    _activePass->MakeVAO(_window->VAO);
   }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     return;
@@ -427,12 +503,30 @@ void Renderer::SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale, float rot
 
 void Renderer::DrawIndexed(std::vector<Vertex> const& v, int count, int poly)
 {
+  if (_window->primary == true)
+  {
+    _activePass->BindActiveFBO(1);
+  }
+  else
+  {
+    _activePass->BindActiveFBO(-1);
+  }
+
+
+  if (_window->VAO == "")
+  {
+    _window->VAO = std::move(_activePass->MakeVAO(_window->name + "VAO"));
+  }
+  if (_activePass->HasVAO(_window->VAO) == false)
+  {
+    _activePass->MakeVAO(_window->VAO);
+  }
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     return;
   _activePass->BindBuffer(_window->VAO);
   _activePass->BindBuffer("VBO");
   _activePass->WriteBuffer("VBO", v.size() * sizeof(Vertex), (void*)v.data());
-  glDrawArraysInstanced(poly, 0, static_cast<GLsizei>(v.size()), count);
+  glDrawArraysInstanced(poly, 0, static_cast<int>(v.size()), count);
   _activePass->UnBindBuffer("VBO");
   _activePass->UnBindBuffer(_window->VAO);
 }
@@ -490,7 +584,8 @@ void Renderer::Update()
   SetActiveWindow(defaultWindow);
   _activePass->FlattenFBOs();
 
-  glFlush();
+  if (activeWindows.size() > 1)
+    glFlush();
   for (auto win : activeWindows)
   {
     SetActiveWindow(win);
@@ -618,7 +713,7 @@ void Renderer::UpdateRenderConstants()
     _activePass->WriteAttribute("texMulti", (void*)&iden[0][0]);
 
   }
-  glViewport(0,0, _window->w,  _window->h);
+  glViewport(0, 0, _window->w, _window->h);
 
 
 
@@ -659,6 +754,83 @@ void Renderer::SetFillMode(int i)
 }
 
 
+
+void Renderer::SetBlendMode(int z)
+{
+  glEnable(GL_BLEND);
+  switch (z)
+  {
+  case 0:
+    glDisable(GL_BLEND);
+    break;
+  case 1:
+    glBlendEquation(GL_FUNC_ADD);
+    break;
+  case 2:
+    glBlendEquation(GL_FUNC_SUBTRACT);
+    break;
+  case 3:
+    glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+    break;
+  case 4:
+    glBlendEquation(GL_MIN);
+    break;
+  case 5:
+    glBlendEquation(GL_MAX);
+    break;
+  }
+}
+
+void Renderer::BindTextureToUnit(ORB_Texture* tex, int texture)
+{
+  if (texture < 0 or texture > 31)
+    throw std::exception("Attempted to bind to non-existant texture Unit");
+  glActiveTexture(GL_TEXTURE0 + texture);
+  glBindTexture(GL_TEXTURE_2D, tex->texture());
+}
+
+void Renderer::BindTextureToUnit(uint tex, int unit)
+{
+  if (unit < 0 or unit > 31)
+    throw std::exception("Attempted to bind to non-existant texture Unit");
+  glActiveTexture(GL_TEXTURE0 + unit);
+  glBindTexture(GL_TEXTURE_2D, tex);
+}
+
+fboinfo Renderer::GetFBOByName(std::string& s)
+{
+  shaderBuffer res;
+
+  if (s.contains("Primary")) {
+    s.erase(s.begin(), s.begin() + s.find('y') + 1);
+    int id = std::stoi(s);
+    res = _activePass->GetFrameBuffer(id);
+  }
+  else if (s.contains("Secondary")) {
+    s.erase(s.begin(), s.begin() + s.find('y') + 1);
+    int id = std::stoi(s) + 3;
+    res = _activePass->GetFrameBuffer(id);
+  }
+  else {
+    res = _activePass->GetFrameBuffer(s);
+  }
+  return { res.first, res.second };
+}
+
+void Renderer::BindActiveFBO(fboinfo f)
+{
+  glBindFramebuffer(GL_FRAMEBUFFER, f.fbo);
+}
+
+void Renderer::ClearFBO(fboinfo f)
+{
+  glClearColor(0, 0, 0, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, f.fbo);
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    return;
+  glClear(GL_COLOR_BUFFER_BIT);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 ORB_Texture* Renderer::RenderText(const char* text, glm::vec4 const& color, int size)
 {

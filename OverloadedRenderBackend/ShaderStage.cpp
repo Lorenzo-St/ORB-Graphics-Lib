@@ -240,10 +240,20 @@ std::string ShaderStage::MakeExtraVAO(std::string name)
     offset += in.second.second;
     CheckError(__LINE__);
   }
-  glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
   CheckError(__LINE__);
   return name;
+}
+
+bool ShaderStage::HasVAO(std::string name)
+{
+  return _buffers.contains(name);
+}
+
+bool ShaderStage::HasBuffer(std::string name)
+{
+  return _buffers.contains(name);
 }
 
 ShaderStage::~ShaderStage()

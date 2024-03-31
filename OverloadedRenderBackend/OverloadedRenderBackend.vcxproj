@@ -117,6 +117,12 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>xcopy "$(Outdir)OverloadedRenderBackend.dll" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.pdb" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.lib" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(ProjectDir)OverloadedRenderBackend.h" "$(SolutionDir)\ORB\Inc\" /s /r /y /q /I</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -153,6 +159,12 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>xcopy "$(Outdir)OverloadedRenderBackend.dll" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.pdb" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.lib" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(ProjectDir)OverloadedRenderBackend.h" "$(SolutionDir)\ORB\Inc\" /s /r /y /q /I</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -185,6 +197,12 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>xcopy "$(Outdir)OverloadedRenderBackend.dll" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.pdb" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.lib" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(ProjectDir)OverloadedRenderBackend.h" "$(SolutionDir)\ORB\Inc\" /s /r /y /q /I</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -221,6 +239,12 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>xcopy "$(Outdir)OverloadedRenderBackend.dll" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.pdb" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(Outdir)OverloadedRenderBackend.lib" "$(SolutionDir)\ORB\Lib\$(Configuration)\" /s /r /y /q /I
+xcopy "$(ProjectDir)OverloadedRenderBackend.h" "$(SolutionDir)\ORB\Inc\" /s /r /y /q /I</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

@@ -83,6 +83,11 @@ namespace orb
 
   }
 
+  ORB_SPEC void ORB_API EnableDebugOutput(bool b)
+  {
+    active->EnableDebugOutput(b);
+  }
+
   void CallKeyCallBack(char key, KEY_STATE newstate)
   {
     if (keyFunction != nullptr)
@@ -223,7 +228,7 @@ namespace orb
     return w;
   }
 
-  ORB_SPEC Window* CreateNewWindow(std::string name)
+  ORB_SPEC Window* CreateNewWindow( std::string& name)
   {
     Window* w = active->MakeWindow(name);
     activeWindows.push_back(w);
@@ -418,7 +423,7 @@ namespace orb
   {
     return active->GetCamera().GetZoom();
   }
-  ORB_SPEC ORB_texture ORB_API LoadTexture(std::string path)
+  ORB_SPEC ORB_texture ORB_API LoadTexture( std::string& path)
   {
     return TextureManager::Instance()->LoadTexture(path);
   }
@@ -442,6 +447,10 @@ namespace orb
   {
 
     active->WriteUniform("texMulti", (void*)&uv);
+  }
+  ORB_SPEC void ORB_API SetTextureSampleMode(ORB_texture t, SAMPLE_SCALE_MODE ssm)
+  {
+    t->SetSampleMode(static_cast<int>(ssm));
   }
   ORB_SPEC void ORB_API SetUV(Vector2D const& uv, Vector2D const& scale)
   {
@@ -518,7 +527,7 @@ namespace orb
       dynamic_cast<TexturedMesh*>(_activeMesh)->SetTexture(t);
     }
   }
-  ORB_SPEC void ORB_API TexMeshSetTexture(std::string s)
+  ORB_SPEC void ORB_API TexMeshSetTexture( std::string& s)
   {
     if (dynamic_cast<TexturedMesh*>(_activeMesh) != nullptr)
     {
@@ -542,7 +551,7 @@ namespace orb
   {
     return MeshLibrary::Instance()->CreateMesh(path);
   }
-  ORB_SPEC ORB_mesh ORB_API LoadMesh(std::string path)
+  ORB_SPEC ORB_mesh ORB_API LoadMesh( std::string& path)
   {
     return MeshLibrary::Instance()->CreateMesh(path);
 
@@ -553,7 +562,7 @@ namespace orb
     return MeshLibrary::Instance()->CreateTexMesh(c);
   }
 
-  ORB_SPEC ORB_mesh ORB_API LoadTexMesh(std::string s)
+  ORB_SPEC ORB_mesh ORB_API LoadTexMesh( std::string& s)
   {
     return MeshLibrary::Instance()->CreateTexMesh(s);
   }
@@ -568,7 +577,7 @@ namespace orb
     m->Execute();
     active->SetMatrix({ pos.x, pos.y, pos.z }, { scale.x, scale.y, scale.z }, { rot.x, rot.y, rot.z });
     active->SetColor(m->Color());
-    active->DrawMesh(m->Verticies(), layer, m->DrawMode());
+    active->DrawMesh(m->Verticies(), (layer >= 0 ? layer : UINT_MAX - layer + 1), m->DrawMode());
     SetUV(glm::identity<glm::mat4>());
   }
 
@@ -615,7 +624,7 @@ namespace orb
     SetUV(glm::identity<glm::mat4>());
   }
 
-  ORB_SPEC void ORB_API LoadCustomRenderPass(std::string const& path)
+  ORB_SPEC void ORB_API LoadCustomRenderPass( std::string const& path)
   {
     if (path.find(".rpass.meta") == std::string::npos)
       return;
@@ -627,34 +636,88 @@ namespace orb
     LoadCustomRenderPass(std::string(path));
   }
 
-  ORB_SPEC void ORB_API SetBufferBase(std::string buffer, int base)
+  ORB_SPEC void ORB_API SetBufferBase( std::string& buffer, int base)
   {
     active->SetBufferBase(buffer, base);
   }
 
-  ORB_SPEC void ORB_API WriteBuffer(std::string buffer, size_t dataSize, void* data)
+  ORB_SPEC void ORB_API SetBufferBase(const char* c, int base)
+  {
+     std::string s = std::string(c);
+    active->SetBufferBase(s, base);
+  }
+
+  ORB_SPEC void ORB_API WriteBuffer( std::string& buffer, size_t dataSize, void* data)
   {
     active->WriteBuffer(buffer, dataSize, data);
   }
 
-  ORB_SPEC void ORB_API WriteUniform(std::string buffer, void* data)
+  ORB_SPEC void ORB_API WriteBuffer(const char* buffer, size_t dataSize, void* data)
+  {
+     std::string s = std::string(buffer);
+    active->WriteBuffer(s, dataSize, data);
+  }
+  ORB_SPEC void ORB_API WriteUniform( std::string& buffer, void* data)
   {
     active->WriteUniform(buffer, data);
   }
-
+  ORB_SPEC void ORB_API WriteUniform(const char* buffer, void* data)
+  {
+    std::string s = std::string(buffer);
+    active->WriteUniform(s, data);
+  }
   ORB_SPEC void ORB_API DispatchCompute(int x, int y, int z)
   {
     active->DispatchCompute(x, y, z);
   }
 
-  ORB_SPEC void ORB_API WriteSubBufferData(std::string buffer, int index, size_t structSize, void* data)
+  ORB_SPEC void ORB_API WriteSubBufferData( std::string& buffer, int index, size_t structSize, void* data)
   {
     active->WriteSubBufferData(buffer, index, structSize, data);
   }
-
+  ORB_SPEC void ORB_API WriteSubBufferData(const char* buffer, int index, size_t structSize, void* data)
+  {
+     std::string s = buffer;
+    active->WriteSubBufferData(s, index, structSize, data);
+  }
+  ORB_SPEC void ORB_API WriteRenderConstantsHere()
+  {
+    active->WriteRenderConstantsHere();
+  }
+  ORB_SPEC void ORB_API SetBindTextureToUnit(ORB_texture tex, int unit)
+  {
+    active->BindTextureToUnit(tex, unit);
+  }
   ORB_SPEC void ORB_API DrawIndexed(ORB_mesh m, int count)
   {
     active->DrawIndexed(m->Verticies(), count, m->DrawMode());
+  }
+  ORB_SPEC ORB_FBO ORB_API GetFBOByName(const char* name)
+  {
+    std::string s = std::string(name);
+    auto r = active->GetFBOByName(s);
+    return {r.fbo, r.texture};
+  }
+  ORB_SPEC ORB_FBO ORB_API GetFBOByName(std::string& name)
+  {
+    auto r = active->GetFBOByName(name);
+    return { r.fbo, r.texture };
+  }
+  ORB_SPEC void ORB_API BindActiveFBO(ORB_FBO of)
+  {
+    active->BindActiveFBO({ of.fbo, of.texture });
+  }
+  ORB_SPEC void ORB_API ClearFBO(ORB_FBO of)
+  {
+    active->ClearFBO({ of.fbo, of.texture });
+  }
+  ORB_SPEC void ORB_API SetFBOTextureActive(ORB_FBO f, int binding)
+  {
+    active->BindTextureToUnit(f.texture, binding);
+  }
+  ORB_SPEC void ORB_API SetBlendMode(BLEND_MODE b)
+  {
+    active->SetBlendMode(static_cast<int>(b));
   }
 }
 Vector2D::Vector2D(float _x, float _y) : x(_x), y(_y) {}

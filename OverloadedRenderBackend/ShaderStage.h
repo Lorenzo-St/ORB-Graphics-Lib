@@ -153,6 +153,8 @@ public:
 
     std::string MakeExtraVAO(std::string name);
 
+    bool HasVAO(std::string name);
+    bool HasBuffer(std::string name);
 private:
     /**
      * @brief Create a shader from a file

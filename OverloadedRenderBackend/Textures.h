@@ -67,6 +67,8 @@ public:
      */
     void IncramentUses();
 
+    void SetSampleMode(int mode);
+
 private:
     std::string _name;
     Image _texture;

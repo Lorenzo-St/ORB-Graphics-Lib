@@ -27,12 +27,30 @@ void RenderPass::WriteAttribute(std::string s, void* data)
 
 void RenderPass::WriteSubBufferData(std::string s, int index, size_t structSize, void* data)
 {
+
+  if (CheckBufferExists(s))
+  {
+  
   std::get<2>(_activeShaderStage)->WriteSubBufferData(s, index, structSize, data);
+  }
+  else 
+  {
+    auto& bufferObject = _buffers[s];
+    glBufferSubData(bufferObject.second, index * structSize, structSize, data);
+  }
 }
 
 void RenderPass::SetBufferBase(std::string buffer, int base)
 {
-  std::get<2>(_activeShaderStage)->SetBufferBase(buffer, base);
+  if (CheckBufferExists(buffer)) 
+  {
+    std::get<2>(_activeShaderStage)->SetBufferBase(buffer, base);
+  }
+  else 
+  {
+    auto& bufferObject = _buffers[buffer];
+    glBindBufferBase(bufferObject.second, base, bufferObject.first);
+  }
 }
 
 void RenderPass::FlattenFBOs()
@@ -103,36 +121,15 @@ std::pair<GLuint, GLuint> RenderPass::GetFrameBuffer(std::string s)
 std::pair<GLuint, GLuint> RenderPass::GetFrameBuffer(int id)
 {
   auto find = [this, id](std::pair<std::string, frameBufferObject> const& a) -> bool {
-    return (std::get<0>(a.second) == _activeStage) && (std::get<1>(a.second) == id);
+    return (std::get<0>(a.second) == _activeStage) && (std::get<1>(a.second) == id - 6);
     };
-  switch (_activeStage)
-  {
-  case renderStage::PrimaryRender:
-    if (id < 3)
-      return { std::get<1>(_primaryFBOs[id]), std::get<2>(_primaryFBOs[id]) };
-    else
-    {
-      auto it = std::find_if(_additionalFBOs.begin(), _additionalFBOs.end(), find);
-      if (it != _additionalFBOs.end())
-        return { std::get<1>(it->second), std::get<2>(it->second) };
-      else
-        return { 0, 0 };
-    }
-    break;
-  case renderStage::SecondaryRender:
-    if (id < 3)
-      return { std::get<1>(_secondaryFBOs[id]), std::get<2>(_secondaryFBOs[id]) };
-    else
-    {
-      auto it = std::find_if(_additionalFBOs.begin(), _additionalFBOs.end(), find);
-      if (it != _additionalFBOs.end())
-        return { std::get<1>(it->second), std::get<2>(it->second) };
 
-      else
-        return { 0, 0 };
-    }
-    break;
-  default:
+  if(id < 3)
+    return { std::get<1>(_primaryFBOs[id]), std::get<2>(_primaryFBOs[id]) };
+  else if(id < 6)
+    return { std::get<1>(_secondaryFBOs[id - 3]), std::get<2>(_secondaryFBOs[id - 3]) };
+  else 
+  {
     auto it = std::find_if(_additionalFBOs.begin(), _additionalFBOs.end(), find);
     if (it != _additionalFBOs.end())
       return { std::get<1>(it->second), std::get<2>(it->second) };
@@ -237,12 +234,16 @@ void RenderPass::ResizeFBOs()
     glDeleteTextures(1, &std::get<2>(fbo));
     glGenTextures(1, &std::get<2>(fbo));
     glBindTexture(GL_TEXTURE_2D, std::get<2>(fbo));
-    glTexStorage2D(
+    glTexImage2D(
       GL_TEXTURE_2D,
-      1,
-      GL_RGBA32F,
-      static_cast<int>(screenSize.x),
-      static_cast<int>(screenSize.y));
+      0,
+      GL_RGBA,
+      static_cast<GLsizei>(screenSize.x),
+      static_cast<GLsizei>(screenSize.y),
+      0,
+      GL_RGBA,
+      GL_FLOAT,
+      NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glFramebufferTexture2D(
       GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, std::get<2>(fbo), 0);
@@ -329,6 +330,11 @@ void RenderPass::DispatchCompute(int x, int y, int z)
   std::get<2>(_activeShaderStage)->Dispatch(x, y, z);
 }
 
+bool RenderPass::HasVAO(std::string s)
+{
+  return std::get<2>(_activeShaderStage)->HasVAO(s);
+}
+
 
 void RenderPass::SetupDefaultFBOs()
 {
@@ -371,6 +377,11 @@ void RenderPass::SetupDefaultFBOs()
   _secondaryFBOs[2] =
     frameBufferObject(renderStage::SecondaryRender, defaultFBOs[5], Textures[5]);
 
+}
+
+bool RenderPass::CheckBufferExists(std::string& s)
+{
+  return std::get<2>(_activeShaderStage)->HasBuffer(s);
 }
 
 RenderPass::RenderPass()
@@ -466,6 +477,26 @@ RenderPass::RenderPass(std::string path) : _flattenStage(new ShaderStage(1))
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
           }
+        }
+      }
+      else if (token == "<buffers>")
+      {
+        while (true)
+        {
+          token = file.readString();
+          if (makeLowerCase(token) == "</buffers>")
+            break;
+          // find first bracket
+          size_t bracket = token.find('[');
+          // Get name
+          std::string name = token.substr(0, bracket);
+          // Erase the name
+          token.erase(token.begin(), token.begin() + bracket + 1);
+          int type = std::stoi(token);
+          GLuint newBuffer = 0;
+          glGenBuffers(1, &newBuffer);
+          _buffers[name] = { newBuffer, bufferTypes.at(type) };
+          Log(Message, "Added buffer:", name, "to Shader:", path);
         }
       }
     }
@@ -610,14 +641,37 @@ void RenderPass::SetSpecificStage(std::string s)
 
 void RenderPass::BindBuffer(std::string s)
 {
+  if (CheckBufferExists(s)) 
+  {
+  
   auto& shader = std::get<2>(_activeShaderStage);
   shader->BindBuffer(s);
+  }
+  else 
+  {
+    auto& bufferObject = _buffers[s];
+    if (bufferObject.second == GL_ARRAY_BUFFER_BINDING)
+      glBindVertexArray(bufferObject.first);
+    else
+      glBindBuffer(bufferObject.second, bufferObject.first);
+  }
 }
 
 void RenderPass::UnBindBuffer(std::string s)
 {
-  auto& shader = std::get<2>(_activeShaderStage);
-  shader->UnBindBuffer(s);
+  if (CheckBufferExists(s))
+  {
+    auto& shader = std::get<2>(_activeShaderStage);
+    shader->UnBindBuffer(s);
+  }
+  else 
+  {
+    auto& bufferObject = _buffers[s];
+    if (bufferObject.second == GL_ARRAY_BUFFER_BINDING)
+      glBindVertexArray(0);
+    else
+      glBindBuffer(bufferObject.second, 0);
+  }
 }
 
 void RenderPass::BindActiveFBO(int id)
@@ -683,5 +737,14 @@ void RenderPass::UnBindActiveFBO()
 
 void RenderPass::WriteBuffer(std::string s, size_t dataSize, void* data)
 {
-  std::get<2>(_activeShaderStage)->WriteBuffer(s, dataSize, data);
+  if (CheckBufferExists(s))
+  {
+    std::get<2>(_activeShaderStage)->WriteBuffer(s, dataSize, data);
+
+  }
+  else 
+  {
+    auto& bufferObject = _buffers[s];
+    glBufferData(bufferObject.second, dataSize, data, GL_STATIC_DRAW);
+  }
 }

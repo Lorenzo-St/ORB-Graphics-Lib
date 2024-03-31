@@ -43,6 +43,9 @@ int callbackTest()
   orb::SetDrawColor(255, 255, 255, 255);
   orb::DrawRect(orb::GetCameraPosition(), { 50, 50 }, 2);
   orb::DrawIndexed(m, 100);
+  orb::SetCameraPosition({ -boxPos.x , -boxPos.y });
+  auto fbo = orb::GetFBOByName("Primary 1");
+  auto fbo2 = orb::GetFBOByName("Secondary 2");
   return 0;
 }
 
@@ -116,7 +119,6 @@ int main()
     orb::Update();
     x = 500 * cos(time);
     y = 500 * sin(time);
-    orb::SetCameraPosition({ x, y});
     time += 1.f / 60.f * .1f;
 
 

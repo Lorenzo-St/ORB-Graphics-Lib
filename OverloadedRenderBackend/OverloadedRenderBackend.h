@@ -73,6 +73,16 @@ typedef ORB_ENUM MOUSEBUTTON ORB_ETYPE(int)
     MIDDLE = 3
 }MOUSEBUTTON;
 
+typedef ORB_ENUM BLEND_MODE ORB_ETYPE(int) 
+{
+  OFF,
+  ADD,
+  SUBTRACT,
+  INVERTED_SUBTRACT,
+  MIN,
+  MAX,
+}BLEND_MODE;
+
 typedef ORB_ENUM NONPRINTINGKEYS ORB_ETYPE(int)
 {
   KEY_UP = 72,
@@ -96,6 +106,13 @@ typedef ORB_ENUM NONPRINTINGKEYS ORB_ETYPE(int)
     RIGHT_SHIFT = 229,
 }NONPRINTINGKEYS;
 
+typedef ORB_ENUM SAMPLE_SCALE_MODE ORB_ETYPE(int)
+{
+  linear,
+  nearest,
+
+}SAMPLE_MODE;
+
 
 typedef struct Window Window;
 
@@ -113,6 +130,11 @@ typedef ORB_FontInfo const* ORB_font;
 
 typedef union SDL_Event SDL_Event;
 typedef SDL_Event* ORB_Event;
+
+typedef struct ORB_FBO {
+  uint fbo;
+  uint texture;
+}ORB_FBO;
 
 typedef void(*KeyCallback)(uchar key, KEY_STATE state);
 typedef void(*MouseButtonCallback)(MOUSEBUTTON button, KEY_STATE state);
@@ -198,6 +220,9 @@ namespace orb
    * This will tell ORB to initialize or change to the requested api.
    */
   extern ORB_SPEC void ORB_API RequestAPI(API_VERSION);
+
+  extern ORB_SPEC void ORB_API EnableDebugOutput(bool b);
+
   /**
    * @brief Update the window
    *
@@ -262,7 +287,7 @@ namespace orb
    * @return pointer to the window data created.
    */
   extern ORB_SPEC Window* CreateNewWindow();
-  extern ORB_SPEC Window* CreateNewWindow(std::string name);
+  extern ORB_SPEC Window* CreateNewWindow( std::string& name);
 
 
   /**
@@ -432,7 +457,7 @@ namespace orb
    * @param path - path to the file
    * @return Returns a pointer to the Texture data structure used in ORB to manage texture
    */
-  extern ORB_SPEC ORB_texture ORB_API LoadTexture(std::string path);
+  extern ORB_SPEC ORB_texture ORB_API LoadTexture( std::string& path);
   /**
  * @brief Load a texture from a file.
  *
@@ -488,6 +513,9 @@ namespace orb
   extern ORB_SPEC void ORB_API SetUV(glm::mat4 const& uv);
 #endif
 
+  extern ORB_SPEC void ORB_API SetTextureSampleMode(ORB_texture t, SAMPLE_SCALE_MODE ssm);
+
+
   // --------------------------------------------------------------------
   //
   // Mesh Functions
@@ -536,7 +564,7 @@ namespace orb
    *  Note: Calling this while the active Mesh is not a Texture Mesh will do nothing
    */
   extern ORB_SPEC void ORB_API TexMeshSetTexture(ORB_texture t);
-  extern ORB_SPEC void ORB_API TexMeshSetTexture(std::string s);
+  extern ORB_SPEC void ORB_API TexMeshSetTexture( std::string& s);
   extern ORB_SPEC void ORB_API TexMeshSetTexture(const char* s);
 
   /**
@@ -549,7 +577,7 @@ namespace orb
    * @param path - path to mesh to load
    */
   extern ORB_SPEC ORB_mesh ORB_API LoadMesh(const char*);
-  extern ORB_SPEC ORB_mesh ORB_API LoadMesh(std::string s);
+  extern ORB_SPEC ORB_mesh ORB_API LoadMesh( std::string& s);
 
   /**
    * @brief Create a textured mesh from a file path.
@@ -557,7 +585,7 @@ namespace orb
    * @param path - path to teh mesh to load
    */
   extern ORB_SPEC ORB_mesh ORB_API LoadTexMesh(const char* c);
-  extern ORB_SPEC ORB_mesh ORB_API LoadTexMesh(std::string s);
+  extern ORB_SPEC ORB_mesh ORB_API LoadTexMesh( std::string& s);
   /**
    * @brief Draw a mesh object.
    *
@@ -668,7 +696,9 @@ namespace orb
   extern ORB_SPEC void ORB_API LoadCustomRenderPass(const char* path);
 
 
-  extern ORB_SPEC void ORB_API SetBufferBase(std::string buffer, int base);
+  extern ORB_SPEC void ORB_API SetBufferBase( std::string& buffer, int base);
+  extern ORB_SPEC void ORB_API SetBufferBase(const char*, int base);
+
 
   /**
    * @brief Write data to a buffer.
@@ -677,14 +707,18 @@ namespace orb
    * @param dataSize the size of the data
    * @param data the data to write
    */
-  extern ORB_SPEC void ORB_API WriteBuffer(std::string buffer, size_t dataSize, void* data);
+  extern ORB_SPEC void ORB_API WriteBuffer( std::string& buffer, size_t dataSize, void* data);
+  extern ORB_SPEC void ORB_API WriteBuffer(const char* buffer, size_t dataSize, void* data);
+
   /**
    * @brief Write an uniform.
    *
    * @param buffer the attribute name to write
    * @param data the data
    */
-  extern ORB_SPEC void ORB_API WriteUniform(std::string buffer, void* data);
+  extern ORB_SPEC void ORB_API WriteUniform( std::string& buffer, void* data);
+  extern ORB_SPEC void ORB_API WriteUniform(const char* buffer, void* data);
+
   /**
    * @brief Dispatch a compute shader.
    *        Note: If the currently active Shader stage is not a compute shader
@@ -704,7 +738,21 @@ namespace orb
    * @param structSize the size of one single element
    * @param data the data to write
    */
-  extern  ORB_SPEC void ORB_API WriteSubBufferData(std::string buffer, int index, size_t structSize, void* data);
+  extern  ORB_SPEC void ORB_API WriteSubBufferData( std::string& buffer, int index, size_t structSize, void* data);
+  extern  ORB_SPEC void ORB_API WriteSubBufferData(const char* buffer, int index, size_t structSize, void* data);
+
+  /**
+   * @brief Update the render constants in the current shader stage
+   */
+  extern ORB_SPEC void ORB_API WriteRenderConstantsHere();
+
+  /**
+   * @brief Bind a texture to a specific texture unit.
+   * 
+   * @param tex - opaque texure pointer
+   * @param unit - texture unit to bind to
+   */
+  extern ORB_SPEC void ORB_API SetBindTextureToUnit(ORB_texture tex, int unit);
   
   /**
    * @brief Draw a mesh multiple times in one draw call.
@@ -713,10 +761,40 @@ namespace orb
    * @param count how many instances to draw
    */
   extern ORB_SPEC void ORB_API DrawIndexed(ORB_mesh m, int count);
+  /**
+   * @brief Get an FBO object by name.
+   *
+   * This function retrieves an FBO object by its name.
+   *
+   * @param name The name of the FBO.
+   * @return ORB_FBO The FBO object.
+   */
+  extern ORB_SPEC ORB_FBO ORB_API GetFBOByName(const char* name);
+  extern ORB_SPEC ORB_FBO ORB_API GetFBOByName( std::string& name);
+  /**
+   * @brief Bind an FBO to the OpenGL context.
+   *
+   * This function binds the specified FBO to the active OpenGL context.
+   *
+   * @param fbo The FBO to be bound.
+   */
+  extern ORB_SPEC void ORB_API BindActiveFBO(ORB_FBO);
+  
+  extern ORB_SPEC void ORB_API ClearFBO(ORB_FBO);
+  /**
+   * @brief Set an FBO texture as active.
+   *
+   * This function sets the specified FBO texture as active for rendering.
+   *
+   * @param fbo The FBO whose texture is to be set active.
+   * @param binding The texture binding index. Default is 0.
+   */
+  extern ORB_SPEC void ORB_API SetFBOTextureActive(ORB_FBO, int binding = 0);
+
+  extern ORB_SPEC void ORB_API SetBlendMode(BLEND_MODE);
+
+
 
 
 }
-
-
-
 #endif

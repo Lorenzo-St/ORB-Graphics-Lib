@@ -43,6 +43,11 @@ typedef struct Window
 
 }Window;
 
+typedef struct fboinfo {
+  uint fbo;
+  uint texture;
+}fboinfo;
+
 class Renderer
 {
 public:
@@ -51,6 +56,8 @@ public:
   Renderer();
   Renderer(std::string path);
   Renderer(const char* path);
+
+  void EnableDebugOutput(bool b);
 
   Window* GetWindow();
   Window* MakeWindow(std::string s = "");
@@ -95,11 +102,19 @@ public:
   void SetBufferBase(std::string buffer, int base);
   void WriteUniform(std::string buffer, void* data);
   void DispatchCompute(int x, int y, int z);
-
+  void WriteRenderConstantsHere();
   glm::vec2 ToWorldSpace(glm::vec2);
   glm::vec2 ToScreenSpace(glm::vec2);
 
   void SetActiveFont(FontInfo const*);
+
+  void SetBlendMode(int);
+
+  void BindTextureToUnit(ORB_Texture* tex, int texture);
+  void BindTextureToUnit(uint tex, int unit);
+  fboinfo GetFBOByName(std::string&);
+  void BindActiveFBO(fboinfo f);
+  void ClearFBO(fboinfo f);
 
   ORB_Texture* RenderText(const char*, glm::vec4 const&, int);
   FontInfo const* ActiveFont();

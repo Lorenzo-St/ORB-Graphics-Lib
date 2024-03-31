@@ -44,9 +44,10 @@ enum class renderStage : int
 typedef std::tuple<renderStage, unsigned int, ShaderStage*> ShaderPass;
 
 typedef int (*renderCallBack)();
-
+extern const std::unordered_map<int, GLenum> bufferTypes;
 typedef std::tuple<renderStage, int, renderCallBack> callback;
 typedef std::tuple<renderStage, GLuint, GLuint> frameBufferObject;
+typedef std::pair<GLuint, GLenum> shaderBuffer;
 
 class RenderPass
 {
@@ -195,10 +196,13 @@ public:
     std::string MakeVAO(std::string);
 
     void DispatchCompute(int x, int y, int z);
+
+    bool HasVAO(std::string);
+
 private:
 
   void SetupDefaultFBOs();
-
+  bool CheckBufferExists(std::string& s);
     // The primary render and the secondary render each get 3 FBOs, assigned to be BG, FG and UI.
     std::array<frameBufferObject, 3> _primaryFBOs;
     std::array<frameBufferObject, 3> _secondaryFBOs;
@@ -206,6 +210,7 @@ private:
     std::map<std::string, frameBufferObject> _additionalFBOs;
 
     std::unordered_map<std::string, ShaderPass> _passess;
+    std::unordered_map<std::string, shaderBuffer> _buffers;
 
     std::vector<callback> _renderCallbacks;
     ShaderPass _activeShaderStage;
