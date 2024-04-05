@@ -67,7 +67,7 @@ public:
   void SetWindowViewPort(Window* wi, int x, int y, int w, int h);
   void SetWindowMaximized(Window* w);
   void SetWindowFullScreen(Window* w, int type);
-
+  void SetWindowTitle(Window* w, const char*);
 
   void SetActiveWindow(Window* w);
 

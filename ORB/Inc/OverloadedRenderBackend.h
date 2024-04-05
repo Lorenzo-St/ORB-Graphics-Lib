@@ -335,6 +335,7 @@ namespace orb
 
   extern ORB_SPEC void ORB_API SetWindowFullScreen(Window* w, int type = 0);
 
+  extern ORB_SPEC void ORB_API SetWindowTitle(Window* w, const char*);
   // --------------------------------------------------------------------
   //
   // Render Functions

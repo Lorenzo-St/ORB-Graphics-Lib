@@ -350,6 +350,10 @@ namespace orb
     active->SetWindowFullScreen(w, type);
 
   }
+  ORB_SPEC void ORB_API SetWindowTitle(Window* w, const char* c)
+  {
+    active->SetWindowTitle(w, c);
+  }
   ORB_SPEC void ORB_API SetDrawColor(uchar r, uchar g, uchar b, uchar a)
   {
     active->SetColor({ r / 255.f, g / 255.f, b / 255.f, a / 255.f });

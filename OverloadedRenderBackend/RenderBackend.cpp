@@ -241,6 +241,10 @@ void Renderer::SetWindowFullScreen(Window* w, int type)
   }
   RefreshWindow(w);
 }
+void Renderer::SetWindowTitle(Window* w, const char* c)
+{
+  SDL_SetWindowTitle(w->window, c);
+}
 void Renderer::DestroyWindow(Window* w)
 {
   //if (w == defaultWindow)
