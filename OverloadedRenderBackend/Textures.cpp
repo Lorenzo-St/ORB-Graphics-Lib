@@ -48,27 +48,17 @@ ORB_Texture* TextureManager::LoadTexture(std::string filename, bool KeepAlive)
     }
     int w, h, channels;
 
-    unsigned char* file = stbi_load(filename.c_str(), &w, &h, &channels, 0);
+    unsigned char* file = stbi_load(filename.c_str(), &w, &h, &channels, 4);
+    if (file == nullptr)
+      return nullptr;
     GLuint texture = 0;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    ORB_Texture* t = nullptr;
-    switch (channels)
-    {
-    case 4:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, file);
-        t = new ORB_Texture(texture, w, h, GL_RGBA32I, KeepAlive);
-        break;
-    case 3:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, file);
-        t = new ORB_Texture(texture, w, h, GL_RGB32I, KeepAlive);
-        break;
-    }
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, file);
+    ORB_Texture* t = new ORB_Texture(texture, w, h, GL_RGBA32I, KeepAlive);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     if (t == nullptr)
       return nullptr;
-    // CheckError(__LINE__);
     t->name(filename);
     _textures.push_back(t);
     stbi_image_free(file);

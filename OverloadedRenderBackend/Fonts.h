@@ -16,7 +16,7 @@
 typedef struct ORB_FontInfo
 {
     TTF_Font* font;
-    const char* name;
+    std::string name;
 } FontInfo;
 
 class Fonts

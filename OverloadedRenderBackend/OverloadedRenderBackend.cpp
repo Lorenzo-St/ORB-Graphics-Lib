@@ -553,12 +553,15 @@ namespace orb
   }
   ORB_SPEC ORB_mesh ORB_API LoadMesh(const char* path)
   {
-    return MeshLibrary::Instance()->CreateMesh(path);
+    ORB_mesh m = MeshLibrary::Instance()->CreateMesh(path);
+    _activeMesh = (ORB_Mesh*)m;
+    return m;
   }
   ORB_SPEC ORB_mesh ORB_API LoadMesh( std::string& path)
   {
-    return MeshLibrary::Instance()->CreateMesh(path);
-
+    ORB_mesh m = MeshLibrary::Instance()->CreateMesh(path);
+    _activeMesh = (ORB_Mesh*)m;
+    return m;
   }
 
   ORB_SPEC ORB_mesh ORB_API LoadTexMesh(const char* c)
