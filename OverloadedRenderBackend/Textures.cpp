@@ -11,7 +11,7 @@
 #include "Textures.h"
 #include "stb_image.h"
 #include <iostream>
-#include <stacktrace>
+// #include <stacktrace>
 extern std::ofstream traceLog;
 
 template <typename Arg, typename... vArgs>
@@ -19,7 +19,11 @@ void TextureManager::Log(TraceLevels l, Arg&& arg1, vArgs&&... variadic)
 {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm ltime;
+    #ifdef _MSC_VER
     localtime_s(&ltime, &t);
+    #else
+    localtime_r(&t, &ltime);
+    #endif
     std::stringstream tm;
     tm << std::put_time(&ltime, "%H:%M:%S");
     if (l >= _globalTraceLevel)
@@ -31,8 +35,8 @@ void TextureManager::Log(TraceLevels l, Arg&& arg1, vArgs&&... variadic)
         ((traceLog << " " << std::forward<vArgs>(variadic)), ...);
         traceLog << std::endl;
 
-        if (l > TraceLevels::Normal)
-            traceLog << std::stacktrace::current() << std::endl;
+        // if (l > TraceLevels::Normal)
+        //     traceLog << std::stacktrace::current() << std::endl;
     }
 }
 
@@ -179,7 +183,7 @@ TextureManager::~TextureManager()
     DropAll();
 }
 
-__declspec(noinline) void TextureManager::checkError()
+void TextureManager::checkError()
 {
     int i = glGetError();
     if (i != 0)

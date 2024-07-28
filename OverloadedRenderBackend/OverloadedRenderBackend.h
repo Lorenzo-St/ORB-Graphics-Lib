@@ -6,14 +6,24 @@
  * @date   December 2023
  *********************************************************************/
 #pragma once
+#ifdef __GNUC__
+  #ifdef __X86__
+  #define __cdecl __attribute__((__cdecl__))
+  #else 
+  #define __cdecl
+  #endif
+  #define __declspec(p) __attribute__((visibility("default")))
+#endif
+
 #ifdef __cplusplus
 #include <vector>
 #include <string>
 #define ORB_ENUM enum class
 #define ORB_ETYPE(x) : x
 #else
-#define ORB_ENUM enum
-#define ORB_ETYPE()
+#define ORB_ENUM enum 
+#define ORB_ETYPE(X)
+#define bool int
 #endif
 #define ORB_API __cdecl
 
@@ -228,6 +238,20 @@ namespace orb
    *
    */
   extern ORB_SPEC void Update();
+  extern ORB_SPEC void EnableLighting(bool);
+  extern ORB_SPEC void EnableShadows(bool b);
+  extern ORB_SPEC void SetMaterialProperties(Vector3D diffuse, Vector3D specular, float specular_exponent);
+  extern ORB_SPEC void SetMaterial(int id);
+  extern ORB_SPEC void SetLight(Vector4D pos, Vector3D color);
+  /**
+   * @brief Set the stored render mode. 
+   * 
+   * @details If stored render is enabled, render calls are deffered and are 
+   * automatically executed on each shader stage that contains a vertex and fragment shader.
+   * This will also ignore any passed render layer and instead render to the layer specified to the mesh. 
+   * 
+   */
+  extern ORB_SPEC void EnableStoredRender(bool b);
 
   /**
    * @brief Register a function to be called during rendering.
@@ -555,6 +579,8 @@ namespace orb
   extern ORB_SPEC void ORB_API MeshAddVertex(Vector3D pos, Vector4D color);
   extern ORB_SPEC void ORB_API MeshAddVertex(Vector3D pos, Vector3D color);
   extern ORB_SPEC void ORB_API MeshAddVertex(Vector3D pos, Vector4D color, Vector2D UV);
+  extern ORB_SPEC void ORB_API MeshAddVertex(Vector3D pos, Vector4D color, Vector2D UV, Vector4D norm);
+
   /**
    * @brief Set the draw color of the active Mesh.
    */
@@ -598,6 +624,8 @@ namespace orb
 #ifdef ORB_GLM
   extern ORB_SPEC void ORB_API DrawMesh(ORB_mesh m, glm::mat4 matrix, int layer = 1);
 #endif
+  extern ORB_SPEC void ORB_API MeshSetLayer(ORB_mesh m, int l);
+
   // --------------------------------------------------------------------
   //
   // Text and Font Functions
@@ -792,9 +820,408 @@ namespace orb
   extern ORB_SPEC void ORB_API SetFBOTextureActive(ORB_FBO, int binding = 0);
 
   extern ORB_SPEC void ORB_API SetBlendMode(BLEND_MODE);
+  extern ORB_SPEC void ORB_API DumpMesh(ORB_mesh m);
 
 
 
 
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
+  /**
+ * @brief Startup the ORB API.
+ *
+ * This should be called once and only once in a program, calling this more than once will do nothing
+ */
+extern ORB_SPEC void ORB_API Initialize();
+/**
+ * @brief Request a new backend API.
+ *
+ * This will tell ORB to initialize or change to the requested api.
+ */
+extern ORB_SPEC void ORB_API RequestAPI(API_VERSION);
+
+extern ORB_SPEC void ORB_API EnableDebugOutput(bool b);
+
+/**
+ * @brief Update the window
+ *
+ */
+extern ORB_SPEC void Update();
+extern ORB_SPEC void EnableLighting(bool b);
+extern ORB_SPEC void EnableShadows(bool b);
+extern ORB_SPEC void SetMaterialProperties(Vector3D diffuse, Vector3D specular, float specular_exponent);
+extern ORB_SPEC void SetMaterial(int id);
+
+extern ORB_SPEC void SetLight(Vector4D pos, Vector3D color);
+
+extern ORB_SPEC void EnableStoredRender(bool b);
+/**
+ * @brief Register a function to be called during rendering.
+ *
+ * @param stage - the stage to call the function on.
+ * @param Callback - Function pointer to callback. Callback must return non zero value if error occurs.
+ */
+extern ORB_SPEC void ORB_API RegisterRenderCallback(int (*Callback)(), RENDER_STAGE stage, int index);
+
+/**
+ * @brief Register an event callback.
+ *        Note: This will override any previously assigned callback
+ *
+ * @param Callback - Pointer to function to call with callback.
+ */
+extern ORB_SPEC void ORB_API RegisterKeyboardCallback(KeyCallback callback);
+extern ORB_SPEC void ORB_API RegisterMouseButtonCallback(MouseButtonCallback callback);
+extern ORB_SPEC void ORB_API RegisterMouseMovementCallback(MouseMovmentCallback callback);
+extern ORB_SPEC void ORB_API RegisterWindowCallback(WindowCallback callback);
+/**
+ * @brief Register a general callback for message handling. Intended for manual callback handling
+ *        Note: This will override any previously assigned callback
+ *        Note: This will require user to include SDL_Events to handle events
+ *
+ * @param Callback - Pointer to function to call with callback.
+ */
+extern ORB_SPEC void ORB_API RegisterMessageCallback(GenericCallback callback);
+
+/**
+ * @brief Tell the ORB api to shutdown.
+ */
+extern ORB_SPEC void ORB_API ShutDown();
+/**
+ * @brief Retrieve the current error state of thr ORB Api.
+ */
+extern ORB_SPEC int  ORB_API GetError();
+/**
+* @brief Check if the window was triggered to close.
+*/
+extern ORB_SPEC int ORB_API IsRunning();
+
+extern ORB_SPEC Vector2D ORB_API ToScreenSpace(Vector2D);
+extern ORB_SPEC Vector2D ORB_API ToWorldSpace(Vector2D);
+
+extern ORB_SPEC Window* CreateNewWindow(const char* c);
+
+
+/**
+ * @brief Set the active window.
+ */
+extern ORB_SPEC void ORBActiveWindow(Window* w);
+
+/**
+ * @brief Retrieve an active window.
+ *  Passing no arguments or a zero will retrieve the very first window created on Initialization
+ *
+ * @param index - the index into the array of active windows for the window to retrieve
+ *
+ * @return pointer to the window data retrieved, nullptr if index is out of bounds
+ */
+extern ORB_SPEC Window* RetrieveWindow(int index);
+/**
+ * @brief Set the clear color for a window.
+ *
+ * @param w - the window
+ * @param color - the color
+ */
+extern ORB_SPEC void ORB_API SetWindowClearColor(Window* w, Vector4D color);
+/**
+ * @brief Set the position of  a window.
+ *
+ * @param w - the window
+ * @param x - window's new x position with 0 being the left side of the monitor
+ * @param y - window's new y position with 0 being the top side of the monitor
+ */
+extern ORB_SPEC void ORB_API SetWindowPosition(Window* w, int x, int y);
+
+/**
+ * @brief Set the size of a window.
+ *
+ * @param wi - the window
+ * @param w - the new width
+ * @param h - the new height
+ */
+extern ORB_SPEC void ORB_API SetWindowScale(Window* wi, int w, int h);
+
+extern ORB_SPEC void ORB_API SetWindowViewport(Window* w, int vx, int vy, int vw, int vh);
+
+extern ORB_SPEC void ORB_API SetWindowMax(Window* w);
+
+extern ORB_SPEC void ORB_API SetWindowFullScreen(Window* w, int type);
+
+/**
+ * @brief Draw a 2D rectangle on-screen.
+ *
+ * @param x - xposition
+ * @param y - yposition
+ * @param width - rectangle's width
+ * @param height - rectangle's height
+ */
+extern ORB_SPEC void ORB_API DrawRect(Vector2D pos, Vector2D scale, int layer);
+
+/**
+ * @brief Draw a 2D rectangle on-screen.
+ *
+ * @param x - xposition
+ * @param y - yposition
+ * @param width - rectangle's width
+ * @param height - rectangle's height
+ * @param rotation - rectangle's 2D rotation
+ */
+extern ORB_SPEC void ORB_API DrawRectAdvanced(Vector2D pos, Vector2D scale, float rotation, int layer);
+/**
+ * @brief Set the active color being drawn. Defaults to full opacity
+ * @param r - Red component
+ * @param g - Green component
+ * @param b - Blue component
+ * @param a - Alpha component
+ */
+extern ORB_SPEC void ORB_API SetDrawColor(uchar r, uchar g, uchar b, uchar a);
+/**
+* @brief Draws a line in 2D or 3D space.
+*
+* This function draws a line from the specified start point to the specified end point in either
+* 2D or 3D space. The depth parameter determines the rendering order, with lower values rendering
+* behind higher values.
+*
+* @param start -  The starting point of the line. Use a Vector2D for 2D space or Vector3D for 3D space.
+* @param end   - The ending point of the line. Use a Vector2D for 2D space or Vector3D for 3D space.
+* @param depth - The depth or layer on which the line will be rendered (default is 1).
+*
+* @note The depth parameter is used to control the rendering order, with lower values rendering behind higher values.
+*/
+extern ORB_SPEC void ORB_API DrawLine(Vector3D start, Vector3D end, int depth);
+/**
+ * @brief Set the project mode to use, default behavior is orthogonal projection.
+ *
+ * @param p - Projection typ enum
+ *
+ */
+extern ORB_SPEC void ORB_API SetProjectionMode(PROJECTION_TYPE);
+/**
+ * @brief Set the Drawmode of the Mesh. (Default = 6)
+ *
+ * @param mode - The mode to draw the mesh with:
+ * 0 = Points
+ * 1 = Lines
+ * 2 = Line Loop
+ * 3 = Line Strip
+ * 4 = Triangles
+ * 5 = Triangle Strip
+ * 6 = Triangle Fan
+ */
+extern ORB_SPEC void ORB_API SetDefaultRenderMode(int i);
+/**
+ * @brief Set the fill mode.
+ *
+ * @param f - the new fill mode
+ * 0 = Point
+ * 1 = Lines
+ * 2 = Fill
+ */
+extern ORB_SPEC void ORB_API SetFillMode(int f);
+/**
+ * @brief Set the zoom level.
+ *
+ * @param z - the new zoom
+ */
+extern ORB_SPEC void ORB_API SetZoom(float z);
+/**
+ * @brief Get the current zoom.
+ */
+extern ORB_SPEC float ORB_API GetZoom();
+/**
+ * @brief Get the size of the window passed in.
+ */
+extern ORB_SPEC Vector2D ORB_API GetWindowSize(Window*);
+/**
+ * @brief Get the position of the camera.
+ */
+extern ORB_SPEC Vector2D ORB_API GetCameraPosition();
+/**
+ * @brief Set the camera's position.
+ *
+ * @param pos - the camera's new position
+ */
+extern ORB_SPEC void ORB_API SetCameraPosition(Vector2D pos);
+/**
+ * @brief Set the camera's rotation.
+ *
+ * @param rot - the camera's new 3D rotation
+ */
+extern ORB_SPEC void ORB_API SetCameraRotation(Vector3D rot);
+// --------------------------------------------------------------------
+//
+// Texture Functions
+//
+// --------------------------------------------------------------------
+
+/**
+* @brief Load a texture from a file.
+*
+* @param path - path to the file
+* @return Returns a pointer to the Texture data structure used in ORB to manage texture
+*/
+extern ORB_SPEC ORB_texture ORB_API LoadTexture(const char* path);
+/**
+ * @brief Set the active Texture being renderer, passing a null pointer will remove the current texture.
+ */
+extern ORB_SPEC void ORB_API SetActiveTexture(ORB_texture);
+/**
+ * @brief Delete a texture.
+ */
+extern ORB_SPEC void ORB_API DeleteTexture(ORB_texture);
+/**
+ * @brief Get the width and height of a Texture.
+ */
+extern ORB_SPEC Vector2D ORB_API GetTextureDimension(ORB_texture);
+/**
+ * @brief Sets the texture coordinates (UV) using a Vector2D.
+ *
+ * This function sets the texture coordinates (UV) using the provided Vector2D.
+ *
+ * @param uv The sub-texture's center UV coordinates as a Vector2D.
+ * @param scale The scale of the sub-texuture as a Vector2D
+ */
+extern ORB_SPEC void ORB_API SetUV(Vector2D const* center, Vector2D const* scale);
+
+
+
+extern ORB_SPEC void ORB_API SetTextureSampleMode(ORB_texture t, enum SAMPLE_SCALE_MODE ssm);
+
+
+// -------
+// Mesh Functions
+//
+// --------------------------------------------------------------------
+
+/**
+ * @brief Start a n-------------------------------------------------------------
+//ew default Mesh.
+ */
+extern ORB_SPEC void ORB_API BeginMesh();
+/**
+ * @brief Start a new Textured Mesh.
+ */
+extern ORB_SPEC void ORB_API BeginTexMesh();
+/**
+ * @brief Set the Drawmode of the Mesh. (Default = 6)
+ *
+ * @param mode - The mode to draw the mesh with:
+ * 0 = Points
+ * 1 = Lines
+ * 2 = Line Loop
+ * 3 = Line Strip
+ * 4 = Triangles
+ * 5 = Triangle Strip
+ * 6 = Triangle Fan
+ */
+extern ORB_SPEC void ORB_API MeshSetDrawMode(int mode);
+/**
+ * @brief Add a vertex to the active mesh.
+ * Must be called after BeginMesh()
+ *
+ * @param pos - The position in mesh space 2D or 3D
+ * @param color - Either a 3 component RGB or a 4 component RGBA color
+ * @param UV - The vertice's UV coordinates
+ */
+extern ORB_SPEC void ORB_API MeshAddVertex(Vector3D pos, Vector4D color, Vector2D UV);
+/**
+ * @brief Set the draw color of the active Mesh.
+ */
+extern ORB_SPEC void ORB_API MeshSetDrawColor(Vector4D color);
+/**
+ * @brief Set the texture of the active TextureMesh.
+ *  Note: Calling this while the active Mesh is not a Texture Mesh will do nothing
+ */
+extern ORB_SPEC void ORB_API TexMeshSetTextureFromPointer(ORB_texture t);
+extern ORB_SPEC void ORB_API TexMeshSetTextureFromString(const char* s);
+
+/**
+ * @brief End the mesh creation and return handle to internal mesh.
+ */
+extern ORB_SPEC ORB_mesh ORB_API EndMesh();
+/**
+ * @brief Create a mesh from a file path.
+ *
+ * @param path - path to mesh to load
+ */
+extern ORB_SPEC ORB_mesh ORB_API LoadMesh(const char*);
+
+/**
+ * @brief Create a textured mesh from a file path.
+ *
+ * @param path - path to teh mesh to load
+ */
+extern ORB_SPEC ORB_mesh ORB_API LoadTexMesh(const char* c);
+/**
+ * @brief Draw a mesh object.
+ *
+ * @param m - the mesh to draw
+ * @param pos - the **world** position to draw at
+ * @param scale - the objects scale
+ * @param rot - the objects 3D rotation in radians along each axis
+ */
+extern ORB_SPEC void ORB_API DrawMesh(ORB_mesh m, Vector3D const* pos, Vector3D const* scale, Vector3D const* rot, int layer);
+extern ORB_SPEC void ORB_API MeshSetLayer(ORB_mesh m, int l);
+
+// --------------------------------------------------------------------
+//
+// Text and Font Functions
+//
+// --------------------------------------------------------------------
+/**
+ * @brief Load a font for use.
+ *
+ * @param path - Path to the font file to load
+ *
+ * @return abstract pointer to FontInfo struct used in backend, nullptr if load failed.
+ */
+extern ORB_SPEC ORB_font ORB_API LoadFont(const char* path);
+/**
+ * @brief Unload a font.
+ *
+ * @param font - the font to unload.
+ */
+extern ORB_SPEC void ORB_API DestroyFont(ORB_font font);
+/**
+ * @brief Set the font to be active for draw.
+ *
+ * @param font - The font to set active
+ */
+extern ORB_SPEC void ORB_API SetActiveFont(ORB_font f);
+/**
+ * @brief Renders the specified text to a texture.
+ *
+ * This function takes a text string, font size, and color as input and generates a texture
+ * containing the rendered text. The texture is then returned.
+ *
+ * @param text The text to be rendered.
+ * @param size The font size of the text.
+ * @param color The color of the text as a Vector4D (default is {1, 1, 1, 1}).
+ * @return The texture containing the rendered text.
+ *
+ * @note Make sure to release the returned texture when it is no longer needed to avoid memory leaks.
+ */
+extern ORB_SPEC ORB_texture ORB_API RenderTextToTexture(const char* text, int size, Vector4D const* color);
+/**
+ * @brief Writes text to the screen at the specified position.
+ *
+ * This function writes the specified text to the screen at the given position, with the
+ * specified font size, color, and layer.
+ *
+ * @param text The text to be written.
+ * @param pos The position on the screen where the text will be written.
+ * @param size The font size of the text.
+ * @param color The color of the text as a Vector4D (default is {1, 1, 1, 1}).
+ * @param layer The layer on which the text will be rendered (default is 1, Max is 2).
+ *
+ * @note The layer parameter determines the rendering order, with lower values rendering behind higher values.
+ */
+extern ORB_SPEC void ORB_API WriteText(const char* text, Vector2D const* pos, int size, Vector4D const* color, int layer);
+
+extern ORB_SPEC void ORB_API DumpMesh(ORB_mesh);
+
+#ifdef __cplusplus
 }
 #endif

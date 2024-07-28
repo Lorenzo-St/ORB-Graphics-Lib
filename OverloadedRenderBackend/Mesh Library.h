@@ -9,7 +9,9 @@ public:
 
   ~MeshLibrary();
   static MeshLibrary* Instance();
-  
+
+  ORB_Mesh* Find(std::string);
+
   ORB_Mesh* CreateMesh();
   ORB_Mesh* CreateMesh(std::string);
   ORB_Mesh* CreateMesh(const char*);
@@ -19,7 +21,7 @@ public:
   ORB_Mesh* CreateTexMesh(const char*);
   
   void DropMesh(ORB_Mesh*);
-
+  std::vector<ORB_Mesh*> const& GetMeshes() { return _meshes; }
 private:
   MeshLibrary() = default;
   

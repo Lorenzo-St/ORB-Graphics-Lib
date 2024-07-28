@@ -12,6 +12,7 @@
 #include <array>
 #include "Camera.h"
 #include "Fonts.h"
+#include "Mesh.h"
 
 class RenderPass;
 typedef int (*renderCallBack)();
@@ -79,8 +80,8 @@ public:
   void RegisterCallBack(int stage, int id, renderCallBack fn);
 
   void DrawRect(glm::vec2 pos, glm::vec2 scale, float rot, uint depth = 1);
-  void DrawMesh(std::vector<Vertex> const& v, uint depth, int poly = 6);
-  void DrawIndexed(std::vector<Vertex> const& v, int count, int poly = 6);
+  void DrawMesh(ORB_Mesh const & v, uint depth);
+  void DrawIndexed(ORB_Mesh const & v, int count);
 
   void SetColor(glm::vec4 const& color);
   void SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale);
@@ -88,7 +89,12 @@ public:
   void SetMatrix(glm::vec3 const& pos, glm::vec3 const& scale, glm::vec3 const& rot);
   void SetMatrix(glm::mat4 const& matrix);
 
-
+  void EnableLighting(bool value);
+  void EnableShadows(bool b);
+  void EnableStoredRender(bool value);
+  void SetLight(glm::vec4 pos, glm::vec3 color);
+  void SetMaterial(glm::vec3, glm::vec3, float);
+  void SetMaterial(int id);
   glm::vec2 GetWindowSize(Window* w);
 
   void Update();
@@ -97,12 +103,17 @@ public:
 
   void SetActiveTexture(ORB_Texture* t);
   
+  void BindBuffer(std::string buffer);
+  void UnbindBuffer(std::string buffer);
   void WriteBuffer(std::string buffer, size_t dataSize, void* data);
   void WriteSubBufferData(std::string, int index, size_t structSize, void* data);
   void SetBufferBase(std::string buffer, int base);
   void WriteUniform(std::string buffer, void* data);
   void DispatchCompute(int x, int y, int z);
   void WriteRenderConstantsHere();
+
+  void SetBindings(GLuint b, GLuint VAO);
+
   glm::vec2 ToWorldSpace(glm::vec2);
   glm::vec2 ToScreenSpace(glm::vec2);
 
@@ -134,6 +145,14 @@ public:
   // Zoom
   float  _zoom = 1;
 
+  bool Stored() const {return storedRender;}
+  struct MaterialInfo {
+    glm::vec3 diff;
+    float buffer;
+    glm::vec3 spec;
+    float specExp;
+  };
+  std::vector<MaterialInfo> _materials;
 private:
 
   void UpdateRenderConstants();
@@ -166,5 +185,13 @@ private:
   
   // Fill mode
   GLuint renderMode = GL_TRIANGLE_FAN;
+
+  bool enableLighting = false;
+  bool storedRender = false;
+  bool _enableShadows = false;
+  bool custom = false;
+
+  RenderInformation _currentObject;
+
 
 };

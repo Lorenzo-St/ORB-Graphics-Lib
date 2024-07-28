@@ -25,7 +25,7 @@ public:
      * @param he the height of the texture
      */
     ORB_Texture(Image te, int wi, int he, GLenum format, bool keepAlive)
-        : _texture(te), _w(wi), _h(he), _uses(0), _format(format), _keepAlive(keepAlive)
+        : _texture(te), _w(wi), _h(he), _uses(0),  _keepAlive(keepAlive), _format(format)
     {
     }
     /**

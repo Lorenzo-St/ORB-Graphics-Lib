@@ -30,11 +30,15 @@ void TexturedMesh::Read(std::string file)
   fileTypes type = GetFileType(file.substr(file.rfind('.')));
   switch (type)
   {
-  case fileTypes::dat:
+  case fileTypes::dat: {
     std::string token = makeLowerCase(s.readString());
     if (token != "<texturedmesh>")
       return;
+  }
     break;
+  default:
+    throw std::runtime_error("File type currently unhandled");
+    return;
   }
   TexturedMesh::Read(s);
 }
@@ -55,6 +59,9 @@ void TexturedMesh::Read(Stream& file)
     t = TextureManager::Instance()->LoadTexture(path);
   }
   break;
+  default:
+    throw std::runtime_error("File type currently unhandled");
+    break;
   }
   this->ORB_Mesh::Read(file);
 }

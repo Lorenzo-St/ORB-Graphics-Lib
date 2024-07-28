@@ -4,7 +4,7 @@
  * @author Lorenzo St. Luce(lorenzo.stluce)
  * @date   October 2023
  *
- * @copyright © 2023 DigiPen (USA) Corporation.
+ * @copyright ï¿½ 2023 DigiPen (USA) Corporation.
  *********************************************************************/
 #pragma once
 #include <glad.h>
@@ -25,13 +25,13 @@ class ShaderStage;
 // These define where in the RenderPass Update will the shader stage be called
 enum class renderStage : int
 {
-    PreRender,
-    PrimaryRender,
-    SecondaryRender,
-    PostRender,
-    PreFrameSwap,
-    PostFrameSwap,
-    End
+  PreRender,
+  PrimaryRender,
+  SecondaryRender,
+  PostRender,
+  PreFrameSwap,
+  PostFrameSwap,
+  End
 };
 
 /**@typedef
@@ -41,179 +41,181 @@ enum class renderStage : int
  *          unsigned int - The runtime order Id of the ShaderStage
  *          ShaderStage* - the ShaderStage object for this ShaderPss
  */
-typedef std::tuple<renderStage, unsigned int, ShaderStage*> ShaderPass;
+typedef std::tuple<renderStage, unsigned int, ShaderStage *> ShaderPass;
 
 typedef int (*renderCallBack)();
 extern const std::unordered_map<int, GLenum> bufferTypes;
 typedef std::tuple<renderStage, int, renderCallBack> callback;
-typedef std::tuple<renderStage, GLuint, GLuint> frameBufferObject;
+typedef std::tuple<renderStage, GLuint, GLuint, GLuint> frameBufferObject;
 typedef std::pair<GLuint, GLenum> shaderBuffer;
 
 class RenderPass
 {
 public:
-    RenderPass();
-    RenderPass(const char* f);
-    RenderPass(std::string s);
-    RenderPass(RenderPass const& r);
-    RenderPass& operator=(RenderPass const&);
-    ~RenderPass();
-    /**
-     * @brief Update what stage of the renderpass we are on
-     *
-     * @details This is not the same as a normal update loop function
-     * This will check what stage of the renderpass we are on the progress to the next one
-     *
-     */
-    void Update();
+  RenderPass(const int v = 0);
+  RenderPass(const char *f);
+  RenderPass(std::string s);
+  RenderPass(RenderPass const &r);
+  RenderPass &operator=(RenderPass const &);
+  ~RenderPass();
+  /**
+   * @brief Update what stage of the renderpass we are on
+   *
+   * @details This is not the same as a normal update loop function
+   * This will check what stage of the renderpass we are on the progress to the next one
+   *
+   */
+  void Update();
 
-    /**
-     * @brief Run the current shaderstage and move active to the next one
-     *
-     * @details
-     *
-     */
-    void RunStage();
-    /**
-     * @brief Set the stage to a specific stage.
-     *
-     * @param s the name of the stage to set
-     */
-    void SetSpecificStage(std::string s);
-    /**
-     * @brief Bind a buffer.
-     *
-     * @param s the buffer's name
-     */
-    void BindBuffer(std::string s);
-    /**
-     * @brief Unbind a buffer.
-     *
-     * @param s the buffer to unbind
-     */
-    void UnBindBuffer(std::string s);
-    /**
-     * @brief Bind an FBO.
-     *
-     * @param id the FBO to bind
-     */
-    void BindActiveFBO(int id);
-    /**
-     * @brief reset the active FBO.
-     *
-     */
-    void UnBindActiveFBO();
-    /**
-     * @brief Write data to a buffer.
-     *
-     * @param buffer the buffer name to write to
-     * @param dataSize the size of the data
-     * @param data the data to write
-     */
-    void WriteBuffer(std::string buffer, size_t dataSize, void* data);
-    /**
-     * @brief Write an attribute.
-     *
-     * @param buffer the attribute name to write
-     * @param data the data
-     */
-    void WriteAttribute(std::string buffer, void* data);
+  /**
+   * @brief Run the current shaderstage and move active to the next one
+   *
+   * @details
+   *
+   */
+  void RunStage();
+  /**
+   * @brief Set the stage to a specific stage.
+   *
+   * @param s the name of the stage to set
+   */
+  void SetSpecificStage(std::string s);
+  /**
+   * @brief Bind a buffer.
+   *
+   * @param s the buffer's name
+   */
+  void BindBuffer(std::string s);
+  /**
+   * @brief Unbind a buffer.
+   *
+   * @param s the buffer to unbind
+   */
+  void UnBindBuffer(std::string s);
+  /**
+   * @brief Bind an FBO.
+   *
+   * @param id the FBO to bind
+   */
+  void BindActiveFBO(int id);
+  /**
+   * @brief reset the active FBO.
+   *
+   */
+  void UnBindActiveFBO();
+  /**
+   * @brief Write data to a buffer.
+   *
+   * @param buffer the buffer name to write to
+   * @param dataSize the size of the data
+   * @param data the data to write
+   */
+  void WriteBuffer(std::string buffer, size_t dataSize, void *data);
+  /**
+   * @brief Write an attribute.
+   *
+   * @param buffer the attribute name to write
+   * @param data the data
+   */
+  void WriteAttribute(std::string buffer, void *data);
 
-    void WriteSubBufferData(std::string, int index, size_t structSize, void* data);
+  void WriteSubBufferData(std::string, int index, size_t structSize, void *data);
 
-    void SetBufferBase(std::string buffer, int base);
+  void SetBufferBase(std::string buffer, int base);
 
-    /**
-     * @brief Flatten all active FBOs.
-     * 
-     */
-    void FlattenFBOs();
+  /**
+   * @brief Flatten all active FBOs.
+   *
+   */
+  void FlattenFBOs();
 
-    /**
-     * @brief Register a callBack function for a specific renderstage.
-     *
-     * @param stage the stage to callback for
-     * @param id the id of the
-     * @param fn the function to call
-     */
-    void RegisterCallBack(renderStage stage, int id, renderCallBack fn);
-    /**
-     * @brief Get what stage we are on.
-     *
-     * @return the current render stage
-     */
-    renderStage CurrentStage();
-    /**
-     * @brief Get an FBO from the secondary buffers.
-     *
-     * @param s the FBO name
-     * @return the Buffer ID
-     */
-    std::pair<GLuint, GLuint> GetFrameBuffer(std::string);
-    /**
-     * @brief Get an FBO based on ID.
-     *
-     * @param id the id
-     * @return the buffer id
-     */
-    std::pair<GLuint, GLuint> GetFrameBuffer(int id);
-    /**
-     * @brief Get reference to array of primary Frame buffer objects.
-     * 
-     * @return 
-     */
-    std::array<frameBufferObject, 3> const& GetPrimaryFBOs();
-    /**
-     * @brief Get reference to array of secondaru Frame buffer objects.
-     *
-     * @return
-     */
-    std::array<frameBufferObject, 3> const& GetSecondaryFBOs();
-    /**
-     * @brief Clear all FBOs and reset stage.
-     * 
-     */
-    void ResetRender();
-    /**
-     * @brief Resize all FBOs.
-     * 
-     */
-    void ResizeFBOs();
-    /**
-     * @brief Resize a specific FBO identified by name.
-     * 
-     * @param 
-     * @param newSize
-     */
-    void ResizeSpecificFBO(std::string, glm::vec2 const& newSize);
+  /**
+   * @brief Register a callBack function for a specific renderstage.
+   *
+   * @param stage the stage to callback for
+   * @param id the id of the
+   * @param fn the function to call
+   */
+  void RegisterCallBack(renderStage stage, int id, renderCallBack fn);
+  /**
+   * @brief Get what stage we are on.
+   *
+   * @return the current render stage
+   */
+  renderStage CurrentStage();
+  /**
+   * @brief Get an FBO from the secondary buffers.
+   *
+   * @param s the FBO name
+   * @return the Buffer ID
+   */
+  std::pair<GLuint, GLuint> GetFrameBuffer(std::string);
+  /**
+   * @brief Get an FBO based on ID.
+   *
+   * @param id the id
+   * @return the buffer id
+   */
+  std::pair<GLuint, GLuint> GetFrameBuffer(int id);
+  /**
+   * @brief Get reference to array of primary Frame buffer objects.
+   *
+   * @return
+   */
+  std::array<frameBufferObject, 3> const &GetPrimaryFBOs();
+  /**
+   * @brief Get reference to array of secondaru Frame buffer objects.
+   *
+   * @return
+   */
+  std::array<frameBufferObject, 3> const &GetSecondaryFBOs();
+  /**
+   * @brief Clear all FBOs and reset stage.
+   *
+   */
+  void ResetRender();
+  /**
+   * @brief Resize all FBOs.
+   *
+   */
+  void ResizeFBOs();
+  /**
+   * @brief Resize a specific FBO identified by name.
+   *
+   * @param
+   * @param newSize
+   */
+  void ResizeSpecificFBO(std::string, glm::vec2 const &newSize);
 
-    bool QuerryAttribute(std::string);
+  bool QuerryAttribute(std::string);
 
-    bool QuerryStage(std::string);
+  bool QuerryStage(std::string);
 
-    int MakeFBO(std::string);
+  int MakeFBO(std::string);
 
-    std::string MakeVAO(std::string);
+  std::string MakeVAO(std::string);
 
-    void DispatchCompute(int x, int y, int z);
+  void DispatchCompute(int x, int y, int z);
 
-    bool HasVAO(std::string);
+  bool HasVAO(std::string);
+
+  void SetBindings(GLuint b, GLuint VAO);
 
 private:
 
   void SetupDefaultFBOs();
-  bool CheckBufferExists(std::string& s);
-    // The primary render and the secondary render each get 3 FBOs, assigned to be BG, FG and UI.
-    std::array<frameBufferObject, 3> _primaryFBOs;
-    std::array<frameBufferObject, 3> _secondaryFBOs;
-    // The rpass.meta file can add more FBOs
-    std::map<std::string, frameBufferObject> _additionalFBOs;
+  bool CheckBufferExists(std::string &s);
+  // The primary render and the secondary render each get 3 FBOs, assigned to be BG, FG and UI.
+  std::array<frameBufferObject, 3> _primaryFBOs;
+  std::array<frameBufferObject, 3> _secondaryFBOs;
+  // The rpass.meta file can add more FBOs
+  std::map<std::string, frameBufferObject> _additionalFBOs;
 
-    std::unordered_map<std::string, ShaderPass> _passess;
-    std::unordered_map<std::string, shaderBuffer> _buffers;
+  std::unordered_map<std::string, ShaderPass> _passess;
+  std::unordered_map<std::string, shaderBuffer> _buffers;
 
-    std::vector<callback> _renderCallbacks;
-    ShaderPass _activeShaderStage;
-    renderStage _activeStage;
-    ShaderStage* _flattenStage;
+  std::vector<callback> _renderCallbacks;
+  ShaderPass _activeShaderStage;
+  renderStage _activeStage = renderStage::PreRender;
+  ShaderStage *_flattenStage = nullptr;
 };

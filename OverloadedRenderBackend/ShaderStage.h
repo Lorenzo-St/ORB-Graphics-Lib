@@ -4,7 +4,7 @@
  * @author Lorenzo St. Luce(lorenzo.stluce)
  * @date   October 2023
  *
- * @copyright © 2023 DigiPen (USA) Corporation.
+ * @copyright ï¿½ 2023 DigiPen (USA) Corporation.
  *********************************************************************/
 #pragma once
 
@@ -155,6 +155,9 @@ public:
 
     bool HasVAO(std::string name);
     bool HasBuffer(std::string name);
+
+    void SetBindings(GLuint b, GLuint VA);
+
 private:
     /**
      * @brief Create a shader from a file

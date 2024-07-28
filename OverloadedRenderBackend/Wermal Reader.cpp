@@ -7,6 +7,8 @@ Data ReadNextAttribute(Stream& source)
   std::string tokens;
   size_t lastpos = source.location();
   tokens = source.readLine();
+  if(tokens == "\r")
+    tokens = source.readLine();
   if (source.isEOF())
     return { false, nullptr };
   if (tokens.find('<') != std::string::npos) 

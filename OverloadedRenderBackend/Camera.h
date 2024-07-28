@@ -1,14 +1,5 @@
-/*****************************************************************
- * @file   Camera.hpp
- * @brief  Header for the Camera class
- * @author Wei-No Wu (weino.wu)
- * @date   November 2023
- *
- * @copyright © 2023 DigiPen (USA) Corporation.
- *****************************************************************/
-
-#include <ext\matrix_clip_space.hpp>
-#include <ext\matrix_transform.hpp>
+#include <matrix_clip_space.hpp>
+#include <matrix_transform.hpp>
 #include <glm.hpp>
 typedef struct Camera
 {

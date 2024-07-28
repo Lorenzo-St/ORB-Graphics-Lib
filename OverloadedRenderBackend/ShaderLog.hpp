@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <stacktrace>
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <time.h>
 #define RESET "\033[0m"
 #define BLACK "\033[30m"          /* Black */
 #define RED "\033[31m"            /* Red */
@@ -67,7 +69,11 @@ static void Log(TraceLevels l, Arg&& arg1, vArgs&&... variadic)
 {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm ltime;
+    #ifdef _MSC_VER
     localtime_s(&ltime, &t);
+    #else
+    localtime_r(&t, &ltime);
+    #endif
     std::stringstream tm;
     tm << std::put_time(&ltime, "%H:%M:%S");
     std::cout << tm.str() << "\t" << (l == Error ? RED : (l == Warning ? YELLOW : RESET))
