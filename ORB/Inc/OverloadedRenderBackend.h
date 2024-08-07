@@ -6,6 +6,15 @@
  * @date   December 2023
  *********************************************************************/
 #pragma once
+#ifdef __GNUC__
+  #ifdef __X86__
+  #define __cdecl __attribute__((__cdecl__))
+  #else 
+  #define __cdecl
+  #endif
+  #define __declspec(p) __attribute__((visibility("default")))
+#endif
+
 #ifdef __cplusplus
 #include <vector>
 #include <string>
@@ -230,7 +239,9 @@ namespace orb
    */
   extern ORB_SPEC void Update();
   extern ORB_SPEC void EnableLighting(bool);
+  extern ORB_SPEC void EnableShadows(bool b);
   extern ORB_SPEC void SetMaterialProperties(Vector3D diffuse, Vector3D specular, float specular_exponent);
+  extern ORB_SPEC void SetMaterial(int id);
   extern ORB_SPEC void SetLight(Vector4D pos, Vector3D color);
   /**
    * @brief Set the stored render mode. 
@@ -840,7 +851,9 @@ extern ORB_SPEC void ORB_API EnableDebugOutput(bool b);
  */
 extern ORB_SPEC void Update();
 extern ORB_SPEC void EnableLighting(bool b);
+extern ORB_SPEC void EnableShadows(bool b);
 extern ORB_SPEC void SetMaterialProperties(Vector3D diffuse, Vector3D specular, float specular_exponent);
+extern ORB_SPEC void SetMaterial(int id);
 
 extern ORB_SPEC void SetLight(Vector4D pos, Vector3D color);
 

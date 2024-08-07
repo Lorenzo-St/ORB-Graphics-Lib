@@ -165,6 +165,7 @@ void ORB_Mesh::CreateBuffer()
     glBindBuffer(GL_ARRAY_BUFFER, _buffer);
     glBufferData(GL_ARRAY_BUFFER, _verticies.size() * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
     // std::cout << offsetof(Vertex, pos) << " " << offsetof(Vertex, color) << " " << offsetof(Vertex, normal) << " " << offsetof(Vertex, tex) << std::endl;
+#ifndef __CLANG
     if constexpr (std::endian::native == std::endian::little)
     {
       glBufferData(GL_ARRAY_BUFFER, _verticies.size() * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
@@ -179,10 +180,11 @@ void ORB_Mesh::CreateBuffer()
     }
     else if constexpr (std::endian::native == std::endian::big)
     {
-
+#endif
       glBufferData(GL_ARRAY_BUFFER, _verticies.size() * sizeof(Vertex), _verticies.data(), GL_STATIC_DRAW);
+#ifndef __CLANG
     }
-
+#endif
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     _backend->SetBindings(_buffer, _vao);
   }

@@ -6,11 +6,12 @@
  *
  * @copyright � 2023 DigiPen (USA) Corporation.
  *********************************************************************/
+#include "pch.h"
+
 #include "RenderPass.h"
 #include "RenderBackend.h"
 #include "ShaderStage.h"
 #include "Stream.h"
-#include "pch.h"
 #include <algorithm>
 #include <tuple>
 
@@ -87,6 +88,7 @@ void RenderPass::FlattenFBOs()
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   s->BindBuffer("VAO");
   s->BindBuffer("VBO");
+#ifndef __CLANG
   if constexpr (std::endian::native == std::endian::little)
   {
     s->WriteBuffer("VBO", _countof(mesh) * sizeof(Vertex), nullptr);
@@ -102,8 +104,11 @@ void RenderPass::FlattenFBOs()
   }
   else if constexpr (std::endian::native == std::endian::big)
   {
+#endif
     s->WriteBuffer("VBO", _countof(mesh) * sizeof(Vertex), (void *)mesh);
-  }
+#ifndef __CLANG
+}
+#endif
 
   // glBlendEquation(GL_MAX);
   glActiveTexture(GL_TEXTURE1);
