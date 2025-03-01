@@ -3,3 +3,6 @@
 /CMakeFiles/
 CMake*.*
 /*.dir/
+/build/
+/build/
+build/
