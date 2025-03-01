@@ -101,6 +101,10 @@ Renderer::Renderer()
     : _window(nullptr), _activeFont(nullptr)
 {
   SDL_Init(SDL_INIT_VIDEO);
+  int n = SDL_GetNumVideoDrivers();
+  auto driver = SDL_GetVideoDriver(0);
+  int res = SDL_VideoInit(driver);
+  assert(res == 0);
   local = this;
   const char *title = "Primary Window";
   int width = 1280, height = 720;
@@ -225,6 +229,7 @@ Window *Renderer::MakeWindow(std::string s)
 
 void Renderer::SetActiveWindow(Window *w)
 {
+  //if (w == _window) return;
   if (activeWindows.size() > 1)
     glFlush();
 #if LOG_WINDOW_SWAPS
@@ -263,7 +268,7 @@ void Renderer::SetActiveWindow(Window *w)
   // }
   if (SDL_GL_MakeCurrent(_window->window, _window->context) != 0)
     throw "Bad";
-  assert(_window->window == SDL_GL_GetCurrentWindow() && "Window swap successful");
+  //assert(_window->window == SDL_GL_GetCurrentWindow() && "Window swap successful");
   UpdateRenderConstants();
 }
 void Renderer::SetWindowMaximized(Window *w)
@@ -357,7 +362,7 @@ glm::vec2 Renderer::ToWorldSpace(glm::vec2 src)
 {
 
   auto screenSize = glm::vec2(_window->w, _window->h);
-  return ((src * glm::vec2(1, -1)) + glm::vec2(-(screenSize.x / 2.0f), (screenSize.y / 2.0f))) * (1.0f / _zoom) - mainCamera.Position();
+  return ((src * glm::vec2(1, -1)) + glm::vec2(-(screenSize.x / 2.0f), (screenSize.y / 2.0f))) * (1.0f / _zoom) - glm::vec2(mainCamera.Position());
 }
 
 void Renderer::SetBufferBase(std::string buffer, int base)
@@ -411,9 +416,12 @@ void Renderer::WriteRenderConstantsHere()
     break;
   case perspective:
     glm::vec3 camPos = camMat * glm::vec4(0, 0, 0, 1);
-    glm::vec3 lookatPos = camMat * glm::vec4(0, 0, 2, 1);
-    _projectionMatrix = glm::perspective(120.0f, _windowSize.x / _windowSize.y, 1.0f, 1500.0f) * glm::lookAt(camPos, lookatPos, glm::vec3(0, 1, 0));
-    _storedProjection = _projectionMatrix * camMat;
+    glm::vec3 lookatPos = camMat * glm::vec4(0, 0, -1, 1);
+    glm::mat4 view = glm::lookAt(camPos, lookatPos, mainCamera.UpVector());
+    glm::mat4 perp = glm::perspective(120.0f, _windowSize.x / _windowSize.y, 1.0f, 1500.0f);
+    _projectionMatrix = perp * view;
+    _storedProjection = _projectionMatrix /** camMat*/;
+    //_storedProjection[3][3] = 1;
     break;
   }
   _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
@@ -422,6 +430,11 @@ void Renderer::WriteRenderConstantsHere()
   {
     const glm::mat4 iden = glm::identity<glm::mat4>();
     _activePass->WriteAttribute("texMulti", (void *)&iden[0][0]);
+  }
+  if (enableLighting) {
+    glm::vec3 pos = mainCamera.Position();
+    _activePass->WriteAttribute("eye_position", &pos);
+
   }
 }
 
@@ -433,7 +446,7 @@ void Renderer::SetBindings(GLuint b, GLuint VAO)
 glm::vec2 Renderer::ToScreenSpace(glm::vec2 src)
 {
   auto screenSize = glm::vec2(_window->w, _window->h);
-  return (src + mainCamera.Position() * _zoom + glm::vec2((screenSize.x / 2.0f), -(screenSize.y / 2.0f)) * glm::vec2(1, -1));
+  return (src + glm::vec2(mainCamera.Position()) * _zoom + glm::vec2((screenSize.x / 2.0f), -(screenSize.y / 2.0f)) * glm::vec2(1, -1));
 }
 
 void Renderer::RegisterCallBack(int stage, int id, renderCallBack fn)
@@ -642,8 +655,11 @@ int StoredUpdate()
   local->SetBufferBase("RenderBuffer", 0);
   local->SetBufferBase("MaterialBuffer",1);
   local->WriteBuffer("MaterialBuffer", sizeof(Renderer::MaterialInfo) * local->_materials.size(), local->_materials.data());
+  local->WriteRenderConstantsHere();
   for (auto &mesh : meshes)
   {
+
+  //Log(Message, mesh->DrawMode(), mesh->path);
     mesh->Render();
     mesh->Reset();
   }
@@ -751,6 +767,17 @@ glm::vec2 Renderer::GetWindowSize(Window *w)
 
 void Renderer::SetMatrix(glm::mat4 const &matrix)
 {
+
+  if (storedRender)
+  {
+    glm::mat3 inv = glm::inverse(glm::mat3(matrix));
+    glm::mat4 norm = glm::mat4(glm::transpose(inv));
+    _currentObject.matrix = matrix;
+    _currentObject.normalMatrix = norm;
+
+    return;
+  }
+
   if (_activePass->QuerryAttribute("objectMatrix") == false)
   {
     std::cerr << "ORB ERROR: Drawabled render stage must contain 4x4 matrix bound to name: objectMatrix" << std::endl;
@@ -762,6 +789,8 @@ void Renderer::SetMatrix(glm::mat4 const &matrix)
 
 void Renderer::Update()
 {
+  //Log(Message, "Updated");
+
   while (_activePass->CurrentStage() != renderStage::PostFrameSwap)
   {
     _activePass->Update();
@@ -906,12 +935,20 @@ void Renderer::UpdateRenderConstants()
         0.f,
         10000000.f);
     _storedProjection = _projectionMatrix * camMat;
+    _uiProjection = _projectionMatrix;
     break;
   case perspective:
     glm::vec3 camPos = camMat * glm::vec4(0, 0, 0, 1);
     glm::vec3 lookatPos = camMat * glm::vec4(0, 0, -1, 1);
     _projectionMatrix = glm::perspective(120.0f, _windowSize.x / _windowSize.y, 1.0f, 100000.0f) * glm::lookAt(camPos, lookatPos, glm::vec3(0, 1, 0));
     _storedProjection = _projectionMatrix * camMat;
+    _uiProjection  = glm::ortho(
+      -_windowSize.x / 2.0f,
+      _windowSize.x / 2.0f,
+      -_windowSize.y / 2.0f,
+      _windowSize.y / 2.0f,
+      0.f,
+      10000000.f);
     break;
   }
   _activePass->WriteAttribute("screenMatrix", &_storedProjection[0][0]);
@@ -920,6 +957,11 @@ void Renderer::UpdateRenderConstants()
   {
     const glm::mat4 iden = glm::identity<glm::mat4>();
     _activePass->WriteAttribute("texMulti", (void *)&iden[0][0]);
+  }
+  if (enableLighting) {
+    glm::vec3 pos = mainCamera.Position();
+    _activePass->WriteAttribute("eye_position", &pos);
+
   }
   glViewport(0, 0, _window->w, _window->h);
 }

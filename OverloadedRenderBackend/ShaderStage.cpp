@@ -6,7 +6,9 @@
  *
  *********************************************************************/
 #include "pch.h"
+#ifndef _countof
 #define _countof(array) (sizeof(array) / sizeof(array[0]))
+#endif
 #include "ShaderStage.h"
 
 // This is a local only thing, the library used here is technically not allowed, so it is only on my
@@ -730,7 +732,7 @@ void ShaderStage::WriteAttribute(std::string s, void *data)
     glUniform1i(attrib.first, *reinterpret_cast<int *>(data));
     break;
   }
-  // CheckError(__LINE__);
+   //CheckError(__LINE__);
 }
 
 void ShaderStage::WriteBuffer(std::string s, size_t dataSize, void *data)

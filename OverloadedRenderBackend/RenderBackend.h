@@ -153,6 +153,16 @@ public:
     float specExp;
   };
   std::vector<MaterialInfo> _materials;
+
+  glm::mat4& projecton() {
+    return _storedProjection;
+  }
+  bool GetLightingEnabled() {
+    return enableLighting;
+  }
+
+  glm::mat4 _uiProjection = glm::identity < glm::mat4 >();
+
 private:
 
   void UpdateRenderConstants();

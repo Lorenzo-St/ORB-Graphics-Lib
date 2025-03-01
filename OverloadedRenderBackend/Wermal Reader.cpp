@@ -5,7 +5,7 @@ Data ReadNextAttribute(Stream& source)
 {
 
   std::string tokens;
-  size_t lastpos = source.location();
+  //size_t lastpos = source.location();
   tokens = source.readLine();
   if(tokens == "\r")
     tokens = source.readLine();

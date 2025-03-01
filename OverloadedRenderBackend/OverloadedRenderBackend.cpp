@@ -66,6 +66,11 @@ namespace orb
 {
   ORB_SPEC void ORB_API Initialize()
   {
+    //FILE* stream;
+    //if ((freopen_s(&stream, "ORB_Log.txt", "w", stdout)) < 0) {
+    //  LogError("Failed to open log file");
+    //  errorState = Errors::InitFailure;
+    //}
     if (active == nullptr)
       active = new Renderer();
     if (active == nullptr)
@@ -178,7 +183,7 @@ namespace orb
       case SDL_TEXTEDITING:
         /* FALL THROUGH */
       case SDL_TEXTINPUT:
-        // std::cout << ev.key.keysym.sym << " " << +ev.key.state << std::endl;
+         //std::cout << ev.key.keysym.sym << " " << +ev.key.state << std::endl;
         if (ev.key.state > 1)
           ev.key.state = 1;
         if (IsFKey(reinterpret_cast<SDL_KeyboardEvent *>(&ev)))
@@ -431,17 +436,28 @@ namespace orb
   {
     return Convert(active->GetWindowSize(w));
   }
-  ORB_SPEC Vector2D ORB_API GetCameraPosition()
+  ORB_SPEC Vector3D ORB_API GetCameraPosition()
   {
-    return Convert(active->GetCamera().Position());
+    return active->GetCamera().Position();
   }
-  ORB_SPEC void ORB_API SetCameraPosition(Vector2D pos)
+  ORB_SPEC void ORB_API SetCameraPosition(Vector3D pos)
   {
-    active->GetCamera().moveCamera(Convert(pos));
+    active->GetCamera().moveCamera(pos);
   }
   ORB_SPEC void ORB_API SetCameraRotation(Vector3D rot)
   {
-    active->GetCamera().rotateCamera(Convert(rot));
+    glm::mat4 m = glm::identity<glm::mat3>();
+    m *= glm::rotate(glm::mat4(1), rot.x, glm::vec3(0, 0, 1));
+    m *= glm::rotate(glm::mat4(1), rot.y, glm::vec3(1, 0, 0));
+    m *= glm::rotate(glm::mat4(1), rot.z, glm::vec3(0, 1, 0));
+    glm::quat q = glm::quat_cast(m);
+    Vector4D v = { q.x, q.y, q.z, q.w };
+    orb::SetCameraRotation(v);
+  }
+  ORB_SPEC void ORB_API SetCameraRotation(Vector4D rot)
+  {
+    glm::quat r = glm::quat(rot.a, rot.r, rot.g, rot.b);
+    active->GetCamera().rotateCamera(r);
   }
   ORB_SPEC float ORB_API GetZoom()
   {
@@ -894,6 +910,21 @@ extern "C"
     return orb::CreateNewWindow(s);
   }
 
+  ORB_SPEC SDL_Window* GetWindowHandle(Window* w)
+  {
+    return w->window;
+  }
+
+  ORB_SPEC SDL_GLContext GetGLContext(Window* w)
+  {
+    return w->context;
+  }
+
+  ORB_SPEC SDL_GLContext GetCurrentGLContext()
+  {
+    return active->GetWindow()->context;
+  }
+
   ORB_SPEC void ORBActiveWindow(Window *w)
   {
     orb::SetActiveWindow(w);
@@ -979,22 +1010,40 @@ extern "C"
     return orb::GetZoom();
   }
 
+  ORB_SPEC float ORB_API GetWindowSizeX(Window* w)
+  {
+    const Vector2D l = orb::GetWindowSize(w);
+    return l.x;
+  }
+
+  ORB_SPEC float ORB_API GetWindowSizeY(Window* w)
+  {
+    const Vector2D l = orb::GetWindowSize(w);
+    return l.y;
+  }
+
   ORB_SPEC Vector2D ORB_API GetWindowSize(Window *w)
   {
     return orb::GetWindowSize(w);
   }
 
-  ORB_SPEC Vector2D ORB_API GetCameraPosition()
+  ORB_SPEC Vector3D ORB_API GetCameraPosition()
   {
     return orb::GetCameraPosition();
   }
 
-  ORB_SPEC void ORB_API SetCameraPosition(Vector2D pos)
+  ORB_SPEC void ORB_API SetCameraPosition(Vector3D pos)
   {
     orb::SetCameraPosition(pos);
   }
 
-  ORB_SPEC void ORB_API SetCameraRotation(Vector3D rot)
+  ORB_SPEC void ORB_API SetCameraRotationAngles(Vector3D rot)
+  {
+    orb::SetCameraRotation(rot);
+
+  }
+
+  ORB_SPEC void ORB_API SetCameraRotation(Vector4D rot)
   {
     orb::SetCameraRotation(rot);
   }
@@ -1083,6 +1132,16 @@ extern "C"
   {
     orb::DrawMesh(m, *pos, *scale, *rot, layer);
   }
+  ORB_SPEC void ORB_API DrawMeshMatrix(ORB_mesh m, float mat[4][4], int layer)
+  {
+    glm::mat4 lMat = glm::mat4(1);
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        lMat[i][j] = mat[i][j];
+      }
+    }
+    orb::DrawMesh(m, lMat, layer);
+  }
 
   ORB_SPEC void ORB_API MeshSetLayer(ORB_mesh m, int l)
   {
@@ -1116,6 +1175,10 @@ extern "C"
   ORB_SPEC void ORB_API DumpMesh(ORB_mesh m)
   {
     m->Dump();
+  }
+  ORB_SPEC void ORB_API MeshSetUIMode(ORB_mesh m, bool b)
+  {
+    const_cast<ORB_Mesh*>(m)->isUI = b;
   }
 #ifdef __cplusplus
 }

@@ -138,8 +138,11 @@ typedef ORB_Mesh const* ORB_mesh;
 typedef struct ORB_FontInfo ORB_FontInfo;
 typedef ORB_FontInfo const* ORB_font;
 
+// SDL Forward declarations
 typedef union SDL_Event SDL_Event;
 typedef SDL_Event* ORB_Event;
+typedef struct SDL_Window SDL_Window;
+typedef void* SDL_GLContext;
 
 typedef struct ORB_FBO {
   uint fbo;
@@ -150,65 +153,68 @@ typedef void(*KeyCallback)(uchar key, KEY_STATE state);
 typedef void(*MouseButtonCallback)(MOUSEBUTTON button, KEY_STATE state);
 typedef void(*MouseMovmentCallback)(int x, int y, int deltaX, int deltaY);
 typedef void(*WindowCallback)(Window* w, int x, int y, int wi, int he, bool focused);
-typedef void (*GenericCallback)(ORB_Event);
+typedef bool (*GenericCallback)(ORB_Event);
 
 typedef struct Vector4D Vector4D;
 typedef struct Vector3D Vector3D;
-
-
-typedef struct Vector2D
-{
-  float x;
-  float y;
 #ifdef __cplusplus
-  ORB_SPEC ORB_API Vector2D() = default;
-  ORB_SPEC ORB_API  Vector2D(float _x, float _y);
-  ORB_SPEC ORB_API  Vector2D(Vector3D const& a);
-  ORB_SPEC ORB_API  Vector2D(Vector4D const& a);
-#ifdef ORB_GLM
-  ORB_SPEC ORB_API Vector2D(glm::vec2 const&);
-  ORB_SPEC  ORB_API operator glm::vec2();
+extern "C" {
 #endif
-#endif
-
-}Vector2D;
-typedef struct Vector3D
-{
-  float x;
-  float y;
-  float z;
+  typedef struct Vector2D
+  {
+    float x;
+    float y;
 #ifdef __cplusplus
-  ORB_SPEC ORB_API Vector3D() = default;
-  ORB_SPEC ORB_API Vector3D(float _x, float _y, float _z);
-  ORB_SPEC ORB_API Vector3D(float _x, float _y);
-
-  ORB_SPEC ORB_API Vector3D(Vector2D const& a);
-  ORB_SPEC ORB_API Vector3D(Vector4D const& a);
+    ORB_SPEC ORB_API Vector2D() = default;
+    ORB_SPEC ORB_API  Vector2D(float _x, float _y);
+    ORB_SPEC ORB_API  Vector2D(Vector3D const& a);
+    ORB_SPEC ORB_API  Vector2D(Vector4D const& a);
 #ifdef ORB_GLM
-  ORB_SPEC ORB_API Vector3D(glm::vec3 const&);
-  ORB_SPEC ORB_API operator glm::vec3();
+    ORB_SPEC ORB_API Vector2D(glm::vec2 const&);
+    ORB_SPEC  ORB_API operator glm::vec2();
 #endif
 #endif
-}Vector3D;
-typedef struct Vector4D
-{
-  float r;
-  float g;
-  float b;
-  float a;
+
+  }Vector2D;
+  typedef struct Vector3D
+  {
+    float x;
+    float y;
+    float z;
 #ifdef __cplusplus
-  ORB_SPEC ORB_API Vector4D() = default;
-  ORB_SPEC ORB_API Vector4D(float _r, float _g, float _b, float _a);
-  ORB_SPEC ORB_API Vector4D(Vector2D const& a);
-  ORB_SPEC ORB_API Vector4D(Vector3D const& a);
+    ORB_SPEC ORB_API Vector3D() = default;
+    ORB_SPEC ORB_API Vector3D(float _x, float _y, float _z);
+    ORB_SPEC ORB_API Vector3D(float _x, float _y);
+
+    ORB_SPEC ORB_API Vector3D(Vector2D const& a);
+    ORB_SPEC ORB_API Vector3D(Vector4D const& a);
 #ifdef ORB_GLM
-  ORB_SPEC ORB_API Vector4D(glm::vec4 const&);
-  ORB_SPEC ORB_API operator glm::vec4();
+    ORB_SPEC ORB_API Vector3D(glm::vec3 const&);
+    ORB_SPEC ORB_API operator glm::vec3();
 #endif
 #endif
-}Vector4D;
+  }Vector3D;
+  typedef struct Vector4D
+  {
+    float r;
+    float g;
+    float b;
+    float a;
+#ifdef __cplusplus
+    ORB_SPEC ORB_API Vector4D() = default;
+    ORB_SPEC ORB_API Vector4D(float _r, float _g, float _b, float _a);
+    ORB_SPEC ORB_API Vector4D(Vector2D const& a);
+    ORB_SPEC ORB_API Vector4D(Vector3D const& a);
+#ifdef ORB_GLM
+    ORB_SPEC ORB_API Vector4D(glm::vec4 const&);
+    ORB_SPEC ORB_API operator glm::vec4();
+#endif
+#endif
+  }Vector4D;
 
-
+#ifdef __cplusplus
+}
+#endif
 #ifdef __cplusplus
 namespace orb
 {
@@ -456,19 +462,21 @@ namespace orb
   /**
    * @brief Get the position of the camera.
    */
-  extern ORB_SPEC Vector2D ORB_API GetCameraPosition();
+  extern ORB_SPEC Vector3D ORB_API GetCameraPosition();
   /**
    * @brief Set the camera's position.
    *
    * @param pos - the camera's new position
    */
-  extern ORB_SPEC void ORB_API SetCameraPosition(Vector2D pos);
+  extern ORB_SPEC void ORB_API SetCameraPosition(Vector3D pos);
   /**
    * @brief Set the camera's rotation.
    *
    * @param rot - the camera's new 3D rotation
    */
   extern ORB_SPEC void ORB_API SetCameraRotation(Vector3D rot);
+  extern ORB_SPEC void ORB_API SetCameraRotation(Vector4D rot);
+
   // --------------------------------------------------------------------
   //
   // Texture Functions
@@ -902,7 +910,9 @@ extern ORB_SPEC Vector2D ORB_API ToScreenSpace(Vector2D);
 extern ORB_SPEC Vector2D ORB_API ToWorldSpace(Vector2D);
 
 extern ORB_SPEC Window* CreateNewWindow(const char* c);
-
+extern ORB_SPEC SDL_Window* GetWindowHandle(Window*);
+extern ORB_SPEC SDL_GLContext GetGLContext(Window*);
+extern ORB_SPEC SDL_GLContext GetCurrentGLContext();
 
 /**
  * @brief Set the active window.
@@ -1033,23 +1043,25 @@ extern ORB_SPEC float ORB_API GetZoom();
 /**
  * @brief Get the size of the window passed in.
  */
-extern ORB_SPEC Vector2D ORB_API GetWindowSize(Window*);
+extern ORB_SPEC float ORB_API GetWindowSizeX(Window*);
+extern ORB_SPEC float ORB_API GetWindowSizeY(Window*);
 /**
  * @brief Get the position of the camera.
  */
-extern ORB_SPEC Vector2D ORB_API GetCameraPosition();
+extern ORB_SPEC Vector3D ORB_API GetCameraPosition();
 /**
  * @brief Set the camera's position.
  *
  * @param pos - the camera's new position
  */
-extern ORB_SPEC void ORB_API SetCameraPosition(Vector2D pos);
+extern ORB_SPEC void ORB_API SetCameraPosition(Vector3D pos);
 /**
  * @brief Set the camera's rotation.
  *
  * @param rot - the camera's new 3D rotation
  */
-extern ORB_SPEC void ORB_API SetCameraRotation(Vector3D rot);
+extern ORB_SPEC void ORB_API SetCameraRotationAngles(Vector3D rot);
+extern ORB_SPEC void ORB_API SetCameraRotation(Vector4D rot);
 // --------------------------------------------------------------------
 //
 // Texture Functions
@@ -1163,6 +1175,7 @@ extern ORB_SPEC ORB_mesh ORB_API LoadTexMesh(const char* c);
  * @param rot - the objects 3D rotation in radians along each axis
  */
 extern ORB_SPEC void ORB_API DrawMesh(ORB_mesh m, Vector3D const* pos, Vector3D const* scale, Vector3D const* rot, int layer);
+extern ORB_SPEC void ORB_API DrawMeshMatrix(ORB_mesh m, float mat[4][4], int layer);
 extern ORB_SPEC void ORB_API MeshSetLayer(ORB_mesh m, int l);
 
 // --------------------------------------------------------------------
@@ -1221,6 +1234,8 @@ extern ORB_SPEC ORB_texture ORB_API RenderTextToTexture(const char* text, int si
 extern ORB_SPEC void ORB_API WriteText(const char* text, Vector2D const* pos, int size, Vector4D const* color, int layer);
 
 extern ORB_SPEC void ORB_API DumpMesh(ORB_mesh);
+
+extern ORB_SPEC void ORB_API MeshSetUIMode(ORB_mesh, bool);
 
 #ifdef __cplusplus
 }

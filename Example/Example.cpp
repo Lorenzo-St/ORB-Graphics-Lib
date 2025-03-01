@@ -28,14 +28,17 @@ int callbackTest()
   orb::DrawRect(boxPos.x, boxPos.y, 100, 100);
 
   orb::SetActiveTexture(nullptr);
-  orb::DrawMesh(m, {2.0f, 1.0f, -1750}, {10.0f, 10.0f}, {});
+  orb::DrawMesh(m, {2.0f, 1.0f, 0}, {10.0f, 10.0f}, {});
   orb::SetDrawColor(0, 255, 255, 255);
 
-  orb::DrawMesh(temp, {-200.0f, 1.0f, -1750}, {100.0f, 100.0f}, {});
+  orb::DrawMesh(temp, {-200.0f, 1.0f, 0}, {100.0f, 100.0f}, {});
+  orb::SetDrawColor(0, 0, 0, 255);
+  orb::DrawMesh(m, { 0.0f, 0.0f, 0 }, { 100.0f, 100.0f }, {});
+
   orb::SetDrawColor(125, 125, 255, 255);
-  orb::DrawMesh(tex, {100.0f, 1.0f, -1750}, {100.0f, 100.0f}, {});
+  orb::DrawMesh(tex, {100.0f, 1.0f, 0}, {100.0f, 100.0f}, {});
   orb::SetDrawColor(255, 0, 255, 255);
-  orb::DrawMesh(temp, {-200.0f, 1.0f, -1750}, {150.0f, 125.0f}, {});
+  orb::DrawMesh(temp, {-200.0f, 1.0f, 0}, {150.0f, 125.0f}, {});
   orb::SetDrawColor(255, 125, 125, 255);
   orb::DrawMesh(tex, {mPosA.x, mPosA.y, 0}, {200.0f, 200.0f}, {});
   orb::DrawLine(Vector2D(0, 0), {100, 100});
@@ -52,7 +55,7 @@ int callbackTest()
   orb::SetDrawColor(255, 255, 255, 255);
   orb::DrawRect(orb::GetCameraPosition(), {50, 50}, 2);
   orb::DrawIndexed(m, 100);
-  // orb::SetCameraPosition({ -boxPos.x , -boxPos.y });
+   orb::SetCameraPosition({ -x , -y, 0 });
   return 0;
 }
 
@@ -67,7 +70,7 @@ void MouseButton(MOUSEBUTTON m, KEY_STATE k)
 
 void KeyInput(uchar key, KEY_STATE state)
 {
-  // std::cout << "Key Callback Triggered: Key=" << key << " State=" << static_cast<int>(state) << std::endl;
+   std::cout << "Key Callback Triggered: Key=" << key << " State=" << static_cast<int>(state) << std::endl;
 
   if (state == KEY_STATE::PRESSED || state == KEY_STATE::HELD)
   {
@@ -92,22 +95,23 @@ void KeyInput(uchar key, KEY_STATE state)
 
 int main()
 {
-  if constexpr (std::endian::native == std::endian::little)
-  {
+  //if constexpr (std::endian::native == std::endian::little)
+  //{
 
-    std::cout << "little" << std::endl;
-  }
-  else if constexpr (std::endian::native == std::endian::big)
-  {
+  //  std::cout << "little" << std::endl;
+  //}
+  //else if constexpr (std::endian::native == std::endian::big)
+  //{
 
-    std::cout << "bit" << std::endl;
-  }
+  //  std::cout << "bit" << std::endl;
+  //}
 
   orb::Initialize();
-  orb::EnableDebugOutput(false);
+  orb::EnableDebugOutput(true);
   orb::SetProjectionMode(PROJECTION_TYPE::PERSPECTIVE);
   w = orb::RetrieveWindow();
   orb::SetActiveWindow(w);
+  GetGLContext(w);
   orb::EnableStoredRender(true);
   orb::EnableLighting(true);
   orb::SetMaterialProperties({.3, .3, .3}, {.7, .7, .7}, .5);

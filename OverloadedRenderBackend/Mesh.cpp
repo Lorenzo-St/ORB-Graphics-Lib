@@ -138,11 +138,26 @@ void ORB_Mesh::EndMesh()
 void ORB_Mesh::Render()
 {
   _backend->WriteBuffer("RenderBuffer", sizeof(RenderInformation) * _renderCalls.size(), _renderCalls.data());
+  if (isUI) {
+    const bool no = false;
+    //glDisable(GL_DEPTH_TEST);
+    //glDepthMask(GL_TRUE);
+    _backend->WriteUniform("screenMatrix", const_cast<float*>(&_backend->_uiProjection[0][0]));
+    _backend->WriteUniform("enableLighting", const_cast<bool*>(&no));
+  }
+  else {
+    const bool col = _backend->GetLightingEnabled();
+    _backend->WriteUniform("screenMatrix", &_backend->projecton()[0][0]);
+    _backend->WriteUniform("enableLighting", const_cast<bool*>(&col));
+  }
   glBindVertexArray(_vao);
   glBindBuffer(GL_ARRAY_BUFFER, _buffer);
   glDrawArraysInstanced(_drawMode, 0, _verticies.size(), _renderCalls.size());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+  if (isUI) {
+    //glEnable(GL_DEPTH_TEST);
+  }
 }
 void ORB_Mesh::Reset() 
 {
@@ -165,8 +180,13 @@ void ORB_Mesh::CreateBuffer()
     glBindBuffer(GL_ARRAY_BUFFER, _buffer);
     glBufferData(GL_ARRAY_BUFFER, _verticies.size() * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
     // std::cout << offsetof(Vertex, pos) << " " << offsetof(Vertex, color) << " " << offsetof(Vertex, normal) << " " << offsetof(Vertex, tex) << std::endl;
+<<<<<<< Updated upstream
 #ifndef __CLANG
     if constexpr (std::endian::native == std::endian::little)
+=======
+#ifdef __CLANG
+    if constexpr (std::endian::native == std::endian::big)
+>>>>>>> Stashed changes
     {
       glBufferData(GL_ARRAY_BUFFER, _verticies.size() * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
       for (int i = 0; i < _verticies.size(); i++)
@@ -178,11 +198,15 @@ void ORB_Mesh::CreateBuffer()
         glBufferSubData(GL_ARRAY_BUFFER, (i * sizeof(Vertex)) + 0 + sizeof(glm::vec2) + (sizeof(glm::vec4) * 2), sizeof(Vertex::pos), &(v.pos));
       }
     }
-    else if constexpr (std::endian::native == std::endian::big)
+    else if constexpr (std::endian::native == std::endian::little)
     {
 #endif
       glBufferData(GL_ARRAY_BUFFER, _verticies.size() * sizeof(Vertex), _verticies.data(), GL_STATIC_DRAW);
+<<<<<<< Updated upstream
 #ifndef __CLANG
+=======
+#ifdef __CLANG
+>>>>>>> Stashed changes
     }
 #endif
     glBindBuffer(GL_ARRAY_BUFFER, 0);

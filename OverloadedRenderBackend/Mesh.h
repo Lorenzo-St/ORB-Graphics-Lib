@@ -48,7 +48,7 @@ public:
 
   int renderLayer = 1;
   std::string path;
-
+  bool isUI = false;
 private:
   void CreateBuffer();
   void CalculateNormals();

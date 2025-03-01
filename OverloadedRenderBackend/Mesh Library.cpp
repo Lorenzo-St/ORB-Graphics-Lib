@@ -19,7 +19,10 @@ ORB_Mesh *MeshLibrary::CreateMesh()
 
 ORB_Mesh *MeshLibrary::CreateMesh(std::string s)
 {
-  ORB_Mesh *m = new ORB_Mesh();
+  ORB_Mesh* m = new ORB_Mesh();
+  auto lam = [s](ORB_Mesh* m) {return m->path == s; };
+  auto exists = std::find_if(_meshes.begin(), _meshes.end(), lam);
+  if (exists != _meshes.end()) return *exists;
   m->Read(s);
   m->path = s;
   _meshes.push_back(m);
@@ -29,6 +32,9 @@ ORB_Mesh *MeshLibrary::CreateMesh(std::string s)
 ORB_Mesh *MeshLibrary::CreateMesh(const char *c)
 {
   ORB_Mesh *m = new ORB_Mesh();
+  auto lam = [c](ORB_Mesh* m) {return m->path == std::string(c); };
+  auto exists = std::find_if(_meshes.begin(), _meshes.end(), lam);
+  if (exists != _meshes.end()) return *exists;
   m->Read(c);
   m->path = c;
   _meshes.push_back(m);

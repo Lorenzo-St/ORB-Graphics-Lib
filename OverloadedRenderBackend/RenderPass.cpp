@@ -15,7 +15,10 @@
 #include <algorithm>
 #include <tuple>
 
+#ifndef _countof
 #define _countof(array) (sizeof(array) / sizeof(array[0]))
+#endif
+
 #include "ShaderLog.hpp"
 void CheckError(int);
 
@@ -89,7 +92,11 @@ void RenderPass::FlattenFBOs()
   s->BindBuffer("VAO");
   s->BindBuffer("VBO");
 #ifndef __CLANG
+<<<<<<< Updated upstream
   if constexpr (std::endian::native == std::endian::little)
+=======
+  if constexpr (std::endian::native == std::endian::big)
+>>>>>>> Stashed changes
   {
     s->WriteBuffer("VBO", _countof(mesh) * sizeof(Vertex), nullptr);
     for (int i = 0; i < _countof(mesh); ++i)
@@ -102,7 +109,7 @@ void RenderPass::FlattenFBOs()
                       sizeof(Vertex::pos), &(v.pos));
     }
   }
-  else if constexpr (std::endian::native == std::endian::big)
+  else if constexpr (std::endian::native == std::endian::little)
   {
 #endif
     s->WriteBuffer("VBO", _countof(mesh) * sizeof(Vertex), (void *)mesh);
@@ -478,7 +485,9 @@ RenderPass::RenderPass(const int v)
                  static_cast<GLsizei>(defaultWindow->w),
                  static_cast<GLsizei>(defaultWindow->h), 0, GL_DEPTH_STENCIL,
                  GL_FLOAT_32_UNSIGNED_INT_24_8_REV, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth, 0);
+
     _additionalFBOs["shadows"] = {renderStage::PreRender, fbo, 0, depth};
   }
   break;
@@ -551,6 +560,7 @@ RenderPass::RenderPass(std::string path) : _flattenStage(new ShaderStage(1))
             GLuint newFBO;
             GLuint newTexture;
             GLuint depth;
+            glGenTextures(1, &depth);
             glGenFramebuffers(1, &newFBO);
             glGenTextures(1, &newTexture);
             glBindFramebuffer(GL_FRAMEBUFFER, newFBO);
